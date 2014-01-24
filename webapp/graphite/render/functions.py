@@ -2997,6 +2997,45 @@ def events(requestContext, *tags):
   result_series.pathExpression = name
   return [result_series]
 
+def linregress(requestContext, seriesList):
+
+  import numpy as np
+  from scipy import stats
+
+  # TODO refactor into module level function
+  def to_epoch(datetime_object):
+    return int(time.mktime(datetime_object.timetuple()))
+
+  start = to_epoch(requestContext["startTime"])
+  end = to_epoch(requestContext["endTime"])
+
+  result = []
+
+  for series in seriesList:
+    time_ = range(series.start, series.end, series.step)
+
+    new_values = []
+    new_time = []
+    for t,v in izip(time_, series):
+        if v is not None:
+            new_values.append(v)
+            new_time.append(t)
+
+    x = np.asarray(new_time)
+    y = np.asarray(new_values)
+    slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+
+    result_values = np.arange(start, end, series.step)
+    result_values = slope * result_values + intercept
+    result_series = TimeSeries('linregress(%s)' % series.name,
+                                start,
+                                end,
+                                series.step,
+                                list(result_values))
+    result.append(result_series)
+
+  return result
+
 def pieAverage(requestContext, series):
   return safeDiv(safeSum(series),safeLen(series))
 

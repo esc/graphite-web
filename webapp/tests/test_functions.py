@@ -1,4 +1,5 @@
 import copy
+import datetime
 from django.test import TestCase
 from mock import patch, call, MagicMock
 
@@ -295,3 +296,38 @@ class FunctionsTest(TestCase):
             results = functions.reduceSeries({}, copy.deepcopy(inputList), "mock", 2, "metric1","metric2" )
             self.assertEqual(results,expectedResult)
         self.assertEqual(mock.mock_calls, [call({},inputList[0]), call({},inputList[1])])
+
+class TestLinregress(TestCase):
+
+    def test_lingeress_is_sane(self):
+        test_data = TimeSeries('test-data', 0, 100, 2, range(0, 200, 4))
+
+        test_context = {"startTime": datetime.datetime.fromtimestamp(0),
+                        "endTime": datetime.datetime.fromtimestamp(100),
+                        }
+        ans = functions.linregress(test_context, [test_data])
+        self.assertEqual(50, len(ans[0]))
+        self.assertEqual('linregress(test-data)', ans[0].name)
+
+    def test_lingeress_returns_future_values(self):
+
+        test_data = TimeSeries('test-data', 0, 100, 2, range(0, 200, 4))
+        test_context = {"startTime": datetime.datetime.fromtimestamp(0),
+                        "endTime": datetime.datetime.fromtimestamp(200),
+                        }
+        ans = functions.linregress(test_context, [test_data])
+        self.assertEqual(100, len(ans[0]))
+
+    def test_lingress_returns_multiple_series(self):
+        test_data = [TimeSeries('test-data-one', 0, 100, 2, range(0, 200, 4)),
+                     TimeSeries('test-data-two', 0, 100, 4, range(0, 200, 8))
+                    ]
+        test_context = {"startTime": datetime.datetime.fromtimestamp(0),
+                        "endTime": datetime.datetime.fromtimestamp(200),
+                        }
+        ans = functions.linregress(test_context, test_data)
+
+        self.assertEqual(2, len(ans))
+        self.assertEqual(100, len(ans[0]))
+        self.assertEqual(50, len(ans[1]))
+
