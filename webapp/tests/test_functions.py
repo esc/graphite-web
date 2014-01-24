@@ -299,7 +299,7 @@ class FunctionsTest(TestCase):
 
 class TestLinregress(TestCase):
 
-    def test_lingeress_is_sane(self):
+    def test_linregress_is_sane(self):
         test_data = TimeSeries('test-data', 0, 100, 2, range(0, 200, 4))
 
         test_context = {"startTime": datetime.datetime.fromtimestamp(0),
@@ -309,7 +309,7 @@ class TestLinregress(TestCase):
         self.assertEqual(50, len(ans[0]))
         self.assertEqual('linregress(test-data)', ans[0].name)
 
-    def test_lingeress_returns_future_values(self):
+    def test_linregress_returns_future_values(self):
 
         test_data = TimeSeries('test-data', 0, 100, 2, range(0, 200, 4))
         test_context = {"startTime": datetime.datetime.fromtimestamp(0),
@@ -318,7 +318,7 @@ class TestLinregress(TestCase):
         ans = functions.linregress(test_context, [test_data])
         self.assertEqual(100, len(ans[0]))
 
-    def test_lingress_returns_multiple_series(self):
+    def test_linregress_returns_multiple_series(self):
         test_data = [TimeSeries('test-data-one', 0, 100, 2, range(0, 200, 4)),
                      TimeSeries('test-data-two', 0, 100, 4, range(0, 200, 8))
                     ]
