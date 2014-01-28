@@ -3012,17 +3012,12 @@ def linregress(requestContext, seriesList):
   result = []
 
   for series in seriesList:
-    time_ = range(series.start, series.end, series.step)
+    time_ = np.arange(series.start, series.end, series.step)
+    values = np.asarray(series)
+    mask = np.not_equal(values, None)
 
-    new_values = []
-    new_time = []
-    for t,v in izip(time_, series):
-        if v is not None:
-            new_values.append(v)
-            new_time.append(t)
-
-    x = np.asarray(new_time)
-    y = np.asarray(new_values)
+    x = time_[mask]
+    y = values[mask]
     slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
 
     result_values = np.arange(start, end, series.step)
