@@ -3094,6 +3094,7 @@ SeriesFunctions = {
   'pct' : asPercent,
   'diffSeries' : diffSeries,
   'divideSeries' : divideSeries,
+  'linregress': linregress,
 
   # Series Filter functions
   'mostDeviant' : mostDeviant,
@@ -3167,8 +3168,6 @@ SeriesFunctions = {
   #events
   'events': events,
 
-  # prediction
-  'linregress': linregress,
 }
 
 
