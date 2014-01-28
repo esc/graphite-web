@@ -3166,6 +3166,9 @@ SeriesFunctions = {
 
   #events
   'events': events,
+
+  # prediction
+  'linregress': linregress,
 }
 
 
