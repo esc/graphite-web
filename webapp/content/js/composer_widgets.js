@@ -1060,7 +1060,7 @@ function createFunctionsMenu() {
         {text: 'Holt-Winters Aberration', handler: applyFuncToEach('holtWintersAberration')},
         {text: 'As Percent', handler: applyFuncToEachWithInput('asPercent', 'Please enter the value that corresponds to 100% or leave blank to use the total', {allowBlank: true})},
         {text: 'Difference (of 2 series)', handler: applyFuncToAll('diffSeries')},
-        {text: 'Ratio (of 2 series)', handler: applyFuncToAll('divideSeries')}
+        {text: 'Ratio (of 2 series)', handler: applyFuncToAll('divideSeries')},
         {text: 'Linear Regression', handler: applyFuncToAll('linregress')}
       ]
     }, {
