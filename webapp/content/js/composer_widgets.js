@@ -181,7 +181,8 @@ function createCalendarWindow() {
   });
   var endDateControl = new Ext.DatePicker({
     id: 'end-date',
-    maxDate: new Date()
+    /* endDate migh be in the future, for predictions and such like */
+    /* maxDate: new Date() */ 
   });
   startDateControl.on('select', calendarSelectionMade);
   endDateControl.on('select', calendarSelectionMade);
