@@ -306,8 +306,10 @@ class TestLinregress(TestCase):
                         "endTime": datetime.datetime.fromtimestamp(100),
                         }
         ans = functions.linregress(test_context, [test_data])
-        self.assertEqual(50, len(ans[0]))
+        self.assertEqual(2, len(ans[0]))
         self.assertEqual('linregress(test-data)', ans[0].name)
+        self.assertEqual(0, ans[0][0])
+        self.assertEqual(200, ans[0][1])
 
     def test_linregress_returns_future_values(self):
 
@@ -316,7 +318,9 @@ class TestLinregress(TestCase):
                         "endTime": datetime.datetime.fromtimestamp(200),
                         }
         ans = functions.linregress(test_context, [test_data])
-        self.assertEqual(100, len(ans[0]))
+        self.assertEqual(2, len(ans[0]))
+        self.assertEqual(0, ans[0][0])
+        self.assertEqual(400, ans[0][1])
 
     def test_linregress_returns_multiple_series(self):
         test_data = [TimeSeries('test-data-one', 0, 100, 2, range(0, 200, 4)),
@@ -328,6 +332,6 @@ class TestLinregress(TestCase):
         ans = functions.linregress(test_context, test_data)
 
         self.assertEqual(2, len(ans))
-        self.assertEqual(100, len(ans[0]))
-        self.assertEqual(50, len(ans[1]))
+        self.assertEqual(2, len(ans[0]))
+        self.assertEqual(2, len(ans[1]))
 

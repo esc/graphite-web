@@ -3020,12 +3020,13 @@ def linregress(requestContext, seriesList):
     y = values[mask]
     slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
 
-    result_values = np.arange(start, end, series.step)
-    result_values = slope * result_values + intercept
+    result_values = []
+    result_values.append(slope * start + intercept)
+    result_values.append(slope * end + intercept)
     result_series = TimeSeries('linregress(%s)' % series.name,
                                 start,
                                 end,
-                                series.step,
+                                end - start,
                                 list(result_values))
     result.append(result_series)
 
