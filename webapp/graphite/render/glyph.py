@@ -661,11 +661,6 @@ class LineGraph(Graph):
       self.endTime = max([series.end for series in self.data])
     else:
       self.endTime = max([(series.end - series.step) for series in self.data])
-    # In case we are using linregress the statment above would lead to the
-    # endTime being the same as the startTime and thus the graph could not be
-    # drawen. Fix that here, by setting it back to the original.
-    if self.endTime == self.startTime:
-      self.endTime = max([series.end for series in self.data])
     self.timeRange = self.endTime - self.startTime
 
     #Now we consolidate our data points to fit in the currently estimated drawing area
