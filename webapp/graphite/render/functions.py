@@ -3025,8 +3025,8 @@ def linregress(requestContext, seriesList):
     result_values.append(slope * end + intercept)
     result_series = TimeSeries('linregress(%s)' % series.name,
                                 start,
-                                end,
-                                end - start,
+                                end + (end - start),
+                                (end - start),
                                 list(result_values))
     result.append(result_series)
 
