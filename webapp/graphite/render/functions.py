@@ -3032,6 +3032,64 @@ def linregress(requestContext, seriesList):
 
   return result
 
+
+def sixSigma(requestContext,
+             seriesLists,
+             timeShiftUnit='7d',
+             timeShiftPeriod=8,
+             sigmaMultiplier=3):
+
+    import numpy as np
+    # Default to negative. parseTimeOffset defaults to +
+    if timeShift[0].isdigit():
+        timeShift = '-' + timeShift
+    delta = parseTimeOffset(timeShift)
+
+    start = to_epoch(requestContext["startTime"])
+    end = to_epoch(requestContext["endTime"])
+    # assemble new requestContext object with shifted endTime
+    myContext = requestContext.copy()
+    myContext['endTime'] = requestContext['endTime'] + delta * timeShiftPeriod
+    series = seriesList[0] # just do this for one series for now
+    shifted = evaluateTarget(myContext, series.pathExpression)
+    # do the six sigma algorithm
+    time_ = np.arange(shifted.start, shifted.end, shifted.step)
+    values = np.asarray(shifted)
+    new_rows = timeShiftPeriod
+    new_columns = values.size/new_rows
+    # reshape the array
+    it = values.reshape(new_rows, new_columns)
+    # remove the last row, which is the current week
+    it = it[:-1,:]
+    # calculate the mean across weeks
+    it_mean = it.mean(axis=0)
+    # calculate the standard deviation across weeks
+    it_std = it.std(axis=0)
+
+    # assemble return values
+    # the mean itself
+    result_mean = TimeSeries('mean',
+                             start,
+                             end + shited.step,
+                             shifted.step,
+                             list(it_mean))
+    # the upper boundary
+    result_upper = TimeSeries('upper',
+                              start,
+                              end + shited.step,
+                              shifted.step,
+                              list(it_mean + sigmaMultiplier * it_std))
+    # the lower boundary
+    result_lowser = TimeSeries('upper',
+                               start,
+                               end + shited.step,
+                               shifted.step,
+                               list(it_mean - sigmaMultiplier * it_std))
+    return [result_mean,
+            result_upper,
+            result_lower,
+            ]
+
 def pieAverage(requestContext, series):
   return safeDiv(safeSum(series),safeLen(series))
 
