@@ -3140,6 +3140,7 @@ SeriesFunctions = {
   'smartSummarize' : smartSummarize,
   'hitcount'  : hitcount,
   'absolute' : absolute,
+  'sixSigma': sixSigma,
 
   # Calculate functions
   'movingAverage' : movingAverage,
