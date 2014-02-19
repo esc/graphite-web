@@ -3053,7 +3053,7 @@ def sixSigma(requestContext,
     end = to_epoch(requestContext["endTime"])
     # assemble new requestContext object with shifted endTime
     myContext = requestContext.copy()
-    myContext['startTime'] = requestContext['startTime'] + delta * timeShiftPeriod
+    myContext['startTime'] = requestContext['endTime'] + delta * timeShiftPeriod
     series = seriesLists[0] # just do this for one series for now
     shifted = evaluateTarget(myContext, series.pathExpression)[0]
     # do the six sigma algorithm
