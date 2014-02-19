@@ -3088,7 +3088,7 @@ def sixSigma(requestContext,
                               shifted.step,
                               list(it_mean + sigmaMultiplier * it_std))
     # the lower boundary
-    result_lower = TimeSeries('upper',
+    result_lower = TimeSeries('lower',
                                start,
                                end + shifted.step,
                                shifted.step,
