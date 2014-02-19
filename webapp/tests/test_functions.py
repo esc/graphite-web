@@ -1,7 +1,11 @@
 import copy
 import datetime
+
+
 from django.test import TestCase
 from mock import patch, call, MagicMock
+import numpy as np
+
 
 from graphite.render.datalib import TimeSeries
 from graphite.render import functions
@@ -335,3 +339,23 @@ class TestLinregress(TestCase):
         self.assertEqual(2, len(ans[0]))
         self.assertEqual(2, len(ans[1]))
 
+class TestSixSigma(TestCase):
+
+    @patch('graphite.render.functions.evaluateTarget')
+    def test(self, evaluateTarget_mock):
+        test_data = TimeSeries('test-data', 0, 1, 1, [1])
+        test_data.pathExpression = 'foo'
+        test_context = {"startTime": datetime.datetime.fromtimestamp(1000),
+                        "endTime": datetime.datetime.fromtimestamp(1200),
+                        }
+        returned_test_data = TimeSeries('full-data',0,100,1,
+                                        np.hstack([np.arange(10) for i in range(10)]))
+        evaluateTarget_mock.return_value = [returned_test_data]
+        ans = functions.sixSigma(test_context,
+                                 [test_data],
+                                 timeShiftUnit='10s',
+                                 timeShiftPeriod=10,
+                                 )
+        print np.asarray(ans[0])
+        print np.asarray(ans[1])
+        print np.asarray(ans[2])
