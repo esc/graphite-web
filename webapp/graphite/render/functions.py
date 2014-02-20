@@ -3059,6 +3059,8 @@ def sixSigma(requestContext,
              timeShiftPeriod=8,
              sigmaMultiplier=3):
 
+    if not seriesList:
+        return []
     import numpy as np
 
     def to_epoch(datetime_object):
