@@ -3075,7 +3075,7 @@ def sixSigma(requestContext,
     it_std = it.std(axis=0)
 
     # figure out how many bins to keep
-    to_keep = ((end-start) / shifted.step ) + 1
+    to_keep = ((end-start) / shifted.step )
     # keep only the relevant bins
     it_mean = it_mean[-to_keep:]
     it_std = it_std[-to_keep:]
@@ -3085,21 +3085,21 @@ def sixSigma(requestContext,
     result_mean = TimeSeries("sixSigmaMean(%s, timeShiftUnit='%s', timeShiftPeriod=%i, sigmaMultiplier=%i)"
                              % (series.name, timeShiftUnit, timeShiftPeriod, sigmaMultiplier),
                              start,
-                             end + shifted.step,
+                             end,
                              shifted.step,
                              list(it_mean))
     # the upper boundary
     result_upper = TimeSeries("sixSigmaUpper(%s, timeShiftUnit='%s', timeShiftPeriod=%i, sigmaMultiplier=%i)"
                              % (series.name, timeShiftUnit, timeShiftPeriod, sigmaMultiplier),
                               start,
-                              end + shifted.step,
+                              end,
                               shifted.step,
                               list(it_mean + sigmaMultiplier * it_std))
     # the lower boundary
     result_lower = TimeSeries("sixSigmaLower(%s, timeShiftUnit='%s', timeShiftPeriod=%i, sigmaMultiplier=%i)"
                              % (series.name, timeShiftUnit, timeShiftPeriod, sigmaMultiplier),
                                start,
-                               end + shifted.step,
+                               end,
                                shifted.step,
                                list(it_mean - sigmaMultiplier * it_std))
     return [result_mean,
