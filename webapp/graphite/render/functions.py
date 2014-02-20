@@ -3074,6 +3074,12 @@ def sixSigma(requestContext,
     # calculate the standard deviation across weeks
     it_std = it.std(axis=0)
 
+    # figure out how many bins to keep
+    to_keep = (end-start) / shifted.step
+    # keep only the relevant bins
+    it_mean = it_mean[-to_keep:]
+    it_std = it_std[-to_keep:]
+
     # assemble return values
     # the mean itself
     result_mean = TimeSeries('mean',
