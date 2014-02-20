@@ -3082,19 +3082,22 @@ def sixSigma(requestContext,
 
     # assemble return values
     # the mean itself
-    result_mean = TimeSeries('mean',
+    result_mean = TimeSeries("sixSigmaMean(%s, timeShiftUnit='%s', timeShiftPeriod=%i, sigmaMultiplier=%i)"
+                             % (series.name, timeShiftUnit, timeShiftPeriod, sigmaMultiplier),
                              start,
                              end + shifted.step,
                              shifted.step,
                              list(it_mean))
     # the upper boundary
-    result_upper = TimeSeries('upper',
+    result_upper = TimeSeries("sixSigmaUpper(%s, timeShiftUnit='%s', timeShiftPeriod=%i, sigmaMultiplier=%i)"
+                             % (series.name, timeShiftUnit, timeShiftPeriod, sigmaMultiplier),
                               start,
                               end + shifted.step,
                               shifted.step,
                               list(it_mean + sigmaMultiplier * it_std))
     # the lower boundary
-    result_lower = TimeSeries('lower',
+    result_lower = TimeSeries("sixSigmaLower(%s, timeShiftUnit='%s', timeShiftPeriod=%i, sigmaMultiplier=%i)"
+                             % (series.name, timeShiftUnit, timeShiftPeriod, sigmaMultiplier),
                                start,
                                end + shifted.step,
                                shifted.step,
