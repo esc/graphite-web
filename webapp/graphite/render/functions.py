@@ -3054,7 +3054,7 @@ def replace_none(array):
         array[start:] = array[start-1]
 
 def sixSigma(requestContext,
-             seriesLists,
+             seriesList,
              timeShiftUnit='7d',
              timeShiftPeriod=8,
              sigmaMultiplier=3):
@@ -3074,58 +3074,61 @@ def sixSigma(requestContext,
     # assemble new requestContext object with shifted endTime
     myContext = requestContext.copy()
     myContext['startTime'] = requestContext['endTime'] + delta * timeShiftPeriod
-    series = seriesLists[0] # just do this for one series for now
-    shifted = evaluateTarget(myContext, series.pathExpression)[0]
-    # do the six sigma algorithm
-    values = np.asarray(shifted)
-    new_rows = timeShiftPeriod
-    new_columns = values.size/new_rows
+    result = []
+    series = seriesList[0]
+    for shifted in evaluateTarget(myContext, series.pathExpression):
 
-    # replace none values by interpolation
-    replace_none(values)
-    # cast to float
-    it = values.astype('float')
-    # reshape the array
-    it = values.reshape(new_rows, new_columns)
-    # remove the last row, which is the current week
-    it = it[:-1,:]
-    # calculate the mean across weeks
-    it_mean = it.mean(axis=0)
-    # calculate the standard deviation across weeks
-    it_std = it.std(axis=0)
+        # do the six sigma algorithm
+        values = np.asarray(shifted)
+        new_rows = timeShiftPeriod
+        new_columns = values.size/new_rows
 
-    # figure out how many bins to keep
-    to_keep = ((end-start) / shifted.step ) + 1
-    # keep only the relevant bins
-    it_mean = it_mean[-to_keep:]
-    it_std = it_std[-to_keep:]
+        # replace none values by interpolation
+        replace_none(values)
+        # cast to float
+        values = values.astype('float')
+        # reshape the array
+        values= values.reshape(new_rows, new_columns)
+        # remove the last row, which is the current week
+        values = values[:-1,:]
+        # calculate the mean across weeks
+        values_mean = values.mean(axis=0)
+        # calculate the standard deviation across weeks
+        values_std = values.std(axis=0)
 
-    # assemble return values
-    # the mean itself
-    result_mean = TimeSeries("sixSigmaMean(%s, timeShiftUnit='%s', timeShiftPeriod=%i, sigmaMultiplier=%i)"
-                             % (series.name, timeShiftUnit, timeShiftPeriod, sigmaMultiplier),
-                             start,
-                             end,
-                             shifted.step,
-                             list(it_mean))
-    # the upper boundary
-    result_upper = TimeSeries("sixSigmaUpper(%s, timeShiftUnit='%s', timeShiftPeriod=%i, sigmaMultiplier=%i)"
-                             % (series.name, timeShiftUnit, timeShiftPeriod, sigmaMultiplier),
-                              start,
-                              end,
-                              shifted.step,
-                              list(it_mean + sigmaMultiplier * it_std))
-    # the lower boundary
-    result_lower = TimeSeries("sixSigmaLower(%s, timeShiftUnit='%s', timeShiftPeriod=%i, sigmaMultiplier=%i)"
-                             % (series.name, timeShiftUnit, timeShiftPeriod, sigmaMultiplier),
-                               start,
-                               end,
-                               shifted.step,
-                               list(it_mean - sigmaMultiplier * it_std))
-    return [result_mean,
-            result_upper,
-            result_lower,
-            ]
+        # figure out how many bins to keep
+        to_keep = ((end-start) / shifted.step ) + 1
+        # keep only the relevant bins
+        values_mean = values_mean[-to_keep:]
+        values_std = values_std[-to_keep:]
+
+        # assemble return values
+        # the mean itself
+        result_mean = TimeSeries("sixSigmaMean(%s, timeShiftUnit='%s', timeShiftPeriod=%i, sigmaMultiplier=%i)"
+                                % (shifted.name, timeShiftUnit, timeShiftPeriod, sigmaMultiplier),
+                                start,
+                                end,
+                                shifted.step,
+                                list(values_mean))
+        # the upper boundary
+        result_upper = TimeSeries("sixSigmaUpper(%s, timeShiftUnit='%s', timeShiftPeriod=%i, sigmaMultiplier=%i)"
+                                % (shifted.name, timeShiftUnit, timeShiftPeriod, sigmaMultiplier),
+                                start,
+                                end,
+                                shifted.step,
+                                list(values_mean + sigmaMultiplier * values_std))
+        # the lower boundary
+        result_lower = TimeSeries("sixSigmaLower(%s, timeShiftUnit='%s', timeShiftPeriod=%i, sigmaMultiplier=%i)"
+                                % (shifted.name, timeShiftUnit, timeShiftPeriod, sigmaMultiplier),
+                                start,
+                                end,
+                                shifted.step,
+                                list(values_mean - sigmaMultiplier * values_std))
+        result.extend([result_mean,
+                result_upper,
+                result_lower,
+                ])
+    return result
 
 def pieAverage(requestContext, series):
   return safeDiv(safeSum(series),safeLen(series))
