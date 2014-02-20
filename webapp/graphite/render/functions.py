@@ -3055,34 +3055,34 @@ def replace_none(array):
 
 def sixSigma(requestContext,
              seriesList,
-             timeShiftUnit='7d',
-             timeShiftPeriod=8,
-             sigmaMultiplier=3):
+             period='7d',
+             repeats=8,
+             factor=3):
 
     if not seriesList:
-        return []
+        return
     import numpy as np
 
     def to_epoch(datetime_object):
         return int(time.mktime(datetime_object.timetuple()))
 
     # Default to negative. parseTimeOffset defaults to +
-    if timeShiftUnit[0].isdigit():
-        timeShiftUnit = '-' + timeShiftUnit
-    delta = parseTimeOffset(timeShiftUnit)
+    if period[0].isdigit():
+        period = '-' + period
+    delta = parseTimeOffset(period)
 
     start = to_epoch(requestContext["startTime"])
     end = to_epoch(requestContext["endTime"])
     # assemble new requestContext object with shifted endTime
     myContext = requestContext.copy()
-    myContext['startTime'] = requestContext['endTime'] + delta * timeShiftPeriod
+    myContext['startTime'] = requestContext['endTime'] + delta * repeats
     result = []
     series = seriesList[0]
     for shifted in evaluateTarget(myContext, series.pathExpression):
 
         # do the six sigma algorithm
         values = np.asarray(shifted)
-        new_rows = timeShiftPeriod
+        new_rows = repeats
         new_columns = values.size/new_rows
 
         # replace none values by interpolation
@@ -3106,26 +3106,26 @@ def sixSigma(requestContext,
 
         # assemble return values
         # the mean itself
-        result_mean = TimeSeries("sixSigmaMean(%s, timeShiftUnit='%s', timeShiftPeriod=%i, sigmaMultiplier=%i)"
-                                % (shifted.name, timeShiftUnit, timeShiftPeriod, sigmaMultiplier),
+        result_mean = TimeSeries("sixSigmaMean(%s, period='%s', repeats=%i, factor=%i)"
+                                % (shifted.name, period, repeats, factor),
                                 start,
                                 end,
                                 shifted.step,
                                 list(values_mean))
         # the upper boundary
-        result_upper = TimeSeries("sixSigmaUpper(%s, timeShiftUnit='%s', timeShiftPeriod=%i, sigmaMultiplier=%i)"
-                                % (shifted.name, timeShiftUnit, timeShiftPeriod, sigmaMultiplier),
+        result_upper = TimeSeries("sixSigmaUpper(%s, period='%s', repeats=%i, factor=%i)"
+                                % (shifted.name, period, repeats, factor),
                                 start,
                                 end,
                                 shifted.step,
-                                list(values_mean + sigmaMultiplier * values_std))
+                                list(values_mean + factor * values_std))
         # the lower boundary
-        result_lower = TimeSeries("sixSigmaLower(%s, timeShiftUnit='%s', timeShiftPeriod=%i, sigmaMultiplier=%i)"
-                                % (shifted.name, timeShiftUnit, timeShiftPeriod, sigmaMultiplier),
+        result_lower = TimeSeries("sixSigmaLower(%s, period='%s', repeats=%i, factor=%i)"
+                                % (shifted.name, period, repeats, factor),
                                 start,
                                 end,
                                 shifted.step,
-                                list(values_mean - sigmaMultiplier * values_std))
+                                list(values_mean - factor * values_std))
         result.extend([result_mean,
                 result_upper,
                 result_lower,
