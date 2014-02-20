@@ -3032,6 +3032,26 @@ def linregress(requestContext, seriesList):
 
   return result
 
+def replace_none(array):
+    import numpy as np
+    run = False
+    start = 0
+    end = 0
+    for index,value in enumerate(array):
+        if not run and value is None:
+            run = True
+            start = index
+        elif run and value is not None:
+            run = False
+            if start == 0:
+                fill = array[index]
+            else:
+                fill = np.linspace(array[start-1],
+                                   array[index],
+                                   index-start+2)[1:-1]
+            array[start:index] = fill
+    if run:
+        array[start:] = array[start-1]
 
 def sixSigma(requestContext,
              seriesLists,
@@ -3060,15 +3080,15 @@ def sixSigma(requestContext,
     values = np.asarray(shifted)
     new_rows = timeShiftPeriod
     new_columns = values.size/new_rows
+
+    # replace none values by interpolation
+    replace_none(values)
+    # cast to float
+    it = values.astype('float')
     # reshape the array
     it = values.reshape(new_rows, new_columns)
     # remove the last row, which is the current week
     it = it[:-1,:]
-    # TODO: handling of missing values
-    # cleanout any None values
-    it[np.equal(it, None)] = 0
-    # replace them with zero
-    it = it.astype('float')
     # calculate the mean across weeks
     it_mean = it.mean(axis=0)
     # calculate the standard deviation across weeks
