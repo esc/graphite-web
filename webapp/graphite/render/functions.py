@@ -3071,6 +3071,19 @@ def sixSigma(requestContext,
         period = '-' + period
     delta = parseTimeOffset(period)
 
+    # parse upper and lower factor
+    try :
+        factor_upper = float(factor)
+        factor_lower = float(factor)
+    except ValueError:
+        factors = factor.split(':')
+        if(len(factors) != 2):
+            raise ValueError('The factor must be a float/int or a string describing two numbers seperated by a ":"')
+        factor_lower = float(factors[0])
+        factor_upper = float(factors[1])
+
+    delta = parseTimeOffset(period)
+
     start = to_epoch(requestContext["startTime"])
     end = to_epoch(requestContext["endTime"])
     # assemble new requestContext object with shifted endTime
@@ -3079,6 +3092,10 @@ def sixSigma(requestContext,
     result = []
     series = seriesList[0]
     for shifted in evaluateTarget(myContext, series.pathExpression):
+
+        # preserve orig name, when only one metric was provided
+        if len(seriesList) == 1:
+            shifted.name = series.name
 
         # do the six sigma algorithm
         values = np.asarray(shifted)
@@ -3090,7 +3107,7 @@ def sixSigma(requestContext,
         # cast to float
         values = values.astype('float')
         # reshape the array
-        values= values.reshape(new_rows, new_columns)
+        values = values.reshape(new_rows, new_columns)
         # remove the last row, which is the current week
         values = values[:-1,:]
         # calculate the mean across weeks
@@ -3106,26 +3123,26 @@ def sixSigma(requestContext,
 
         # assemble return values
         # the mean itself
-        result_mean = TimeSeries("sixSigmaMean(%s, period='%s', repeats=%i, factor=%i)"
-                                % (shifted.name, period, repeats, factor),
+        result_mean = TimeSeries("sixSigmaMean(%s, period='%s', repeats=%i)"
+                                % (shifted.name, period, repeats),
                                 start,
                                 end,
                                 shifted.step,
                                 list(values_mean))
         # the upper boundary
-        result_upper = TimeSeries("sixSigmaUpper(%s, period='%s', repeats=%i, factor=%i)"
-                                % (shifted.name, period, repeats, factor),
+        result_upper = TimeSeries("sixSigmaUpper(%s, period='%s', repeats=%i, factor=%s)"
+                                % (shifted.name, period, repeats, factor_upper),
                                 start,
                                 end,
                                 shifted.step,
-                                list(values_mean + factor * values_std))
+                                list(values_mean + factor_upper * values_std))
         # the lower boundary
-        result_lower = TimeSeries("sixSigmaLower(%s, period='%s', repeats=%i, factor=%i)"
-                                % (shifted.name, period, repeats, factor),
+        result_lower = TimeSeries("sixSigmaLower(%s, period='%s', repeats=%i, factor=%s)"
+                                % (shifted.name, period, repeats, factor_lower),
                                 start,
                                 end,
                                 shifted.step,
-                                list(values_mean - factor * values_std))
+                                list(values_mean - factor_lower * values_std))
         result.extend([result_mean,
                 result_upper,
                 result_lower,
