@@ -3182,7 +3182,6 @@ SeriesFunctions = {
   'smartSummarize' : smartSummarize,
   'hitcount'  : hitcount,
   'absolute' : absolute,
-  'sixSigma': sixSigma,
 
   # Calculate functions
   'movingAverage' : movingAverage,
@@ -3197,6 +3196,7 @@ SeriesFunctions = {
   'diffSeries' : diffSeries,
   'divideSeries' : divideSeries,
   'linregress': linregress,
+  'sixSigma': sixSigma,
 
   # Series Filter functions
   'mostDeviant' : mostDeviant,
