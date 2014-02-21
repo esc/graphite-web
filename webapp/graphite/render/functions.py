@@ -3069,7 +3069,14 @@ def sixSigma(requestContext,
     # Default to negative. parseTimeOffset defaults to +
     if period[0].isdigit():
         period = '-' + period
+
     delta = parseTimeOffset(period)
+    start = to_epoch(requestContext["startTime"])
+    end = to_epoch(requestContext["endTime"])
+
+    # check six sigma period is not smaller than viewed time_period
+    if abs(delta.total_seconds()) < (end-start):
+        raise ValueError('the rendered time_period between %s and %s was greater than one six sigma period of %s' %(requestContext["startTime"],requestContext["endTime"],period))
 
     # parse upper and lower factor
     try :
@@ -3077,15 +3084,11 @@ def sixSigma(requestContext,
         factor_lower = float(factor)
     except ValueError:
         factors = factor.split(':')
-        if(len(factors) != 2):
+        if len(factors) != 2:
             raise ValueError('The factor must be a float/int or a string describing two numbers seperated by a ":"')
         factor_lower = float(factors[0])
         factor_upper = float(factors[1])
 
-    delta = parseTimeOffset(period)
-
-    start = to_epoch(requestContext["startTime"])
-    end = to_epoch(requestContext["endTime"])
     # assemble new requestContext object with shifted endTime
     myContext = requestContext.copy()
     myContext['startTime'] = requestContext['endTime'] + delta * repeats
