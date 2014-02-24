@@ -3075,7 +3075,7 @@ def sixSigma(requestContext,
     end = to_epoch(requestContext["endTime"])
 
     # check six sigma period is not smaller than viewed time_period
-    if abs(delta.total_seconds()) < (end-start):
+    if abs(delta) < timedelta(seconds=(end-start)):
         raise ValueError('the rendered time_period between %s and %s was greater than one six sigma period of %s' %(requestContext["startTime"],requestContext["endTime"],period))
 
     # parse upper and lower factor
