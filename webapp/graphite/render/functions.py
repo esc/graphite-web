@@ -3032,6 +3032,7 @@ def linregress(requestContext, seriesList):
 
   return result
 
+
 def replace_none(array):
     import numpy as np
     run = False
@@ -3052,6 +3053,7 @@ def replace_none(array):
             array[start:index] = fill
     if run:
         array[start:] = array[start-1]
+
 
 def sixSigma(requestContext,
              seriesList,
@@ -3079,7 +3081,7 @@ def sixSigma(requestContext,
         raise ValueError('the rendered time_period between %s and %s was greater than one six sigma period of %s' %(requestContext["startTime"],requestContext["endTime"],period))
 
     # parse upper and lower factor
-    try :
+    try:
         factor_upper = float(factor)
         factor_lower = float(factor)
     except ValueError:
