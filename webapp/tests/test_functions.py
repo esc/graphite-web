@@ -327,6 +327,16 @@ class TestLinregress(TestCase):
         self.assertEqual(0, ans[0][0])
         self.assertEqual(400, ans[0][1])
 
+    def test_linregress_returns_no_series_when_amount_of_nones_is_to_high(self):
+        test_data_values = range(0, 20, 4)
+        test_data_values[1] = None
+        test_data = TimeSeries('test-data', 0, 20, 4, test_data_values)
+        test_context = {"startTime": datetime.datetime.fromtimestamp(0),
+                        "endTime": datetime.datetime.fromtimestamp(20),
+                        }
+        ans = functions.linregress(test_context, [test_data], minValidValues=0.9)
+        self.assertEqual(0, len(ans))
+
     def test_linregress_returns_multiple_series(self):
         test_data = [TimeSeries('test-data-one', 0, 100, 2, range(0, 200, 4)),
                      TimeSeries('test-data-two', 0, 100, 4, range(0, 200, 8))

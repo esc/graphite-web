@@ -2997,7 +2997,7 @@ def events(requestContext, *tags):
   result_series.pathExpression = name
   return [result_series]
 
-def linregress(requestContext, seriesList):
+def linregress(requestContext, seriesList, minValidValues=0):
 
   import numpy as np
   from scipy import stats
@@ -3012,12 +3012,16 @@ def linregress(requestContext, seriesList):
   result = []
 
   for series in seriesList:
-    time_ = np.arange(series.start, series.end, series.step)
-    values = np.asarray(series)
-    mask = np.not_equal(values, None)
+    time_ = np.arange(series.start, series.end, series.step, dtype=float)
+    values = np.asarray(series, dtype=float)
+    mask = np.logical_not(np.isnan(values))
 
     x = time_[mask]
     y = values[mask]
+
+    # if more than  of values are None, we can't predict
+    if len(values) * minValidValues > (len(y)):
+        continue
     slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
 
     result_values = []
