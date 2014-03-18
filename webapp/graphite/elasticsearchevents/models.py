@@ -1,24 +1,18 @@
 import time
 import os
 
-from django.db import models
 from django.conf import settings
 from elasticsearch import Elasticsearch
-
-if os.environ.get('READTHEDOCS'):
-    TagField = lambda *args, **kwargs: None
-else:
-    from tagging.fields import TagField
+from datetime import timedelta
 
 class Event(object):
-    
+
     def __init__(self, when=None, what=None, data=None, tags=None):
         self.id   = -1
         self.when = when
         self.what = what
         self.data = data
         self.tags = tags
-        
 
     def __str__(self):
         return "%s: %s" % (self.when, self.what)
@@ -26,19 +20,19 @@ class Event(object):
     @staticmethod
     def find_events(time_from=None, time_until=None, tags=None):
         query = {
-            "filter" : {
-                "query" : {
-                    "query_string" : {
-                        "query" : "HOST:devexp03"
+            "filter": {
+                "query": {
+                    "query_string": {
+                        "query": "HOST:devexp03"
                     }
                 }
             },
-            "size":500
+            "size": 500
         }
 
         events = list()
 
-        result = elasticsearchclient.search(Event.indices(time_from, time_until), body=query)
+        result = elasticsearchclient.search(Event.indices(time_from, time_until), body=query, ignore_indices="missing")
         for hit in result["hits"]["hits"]:
             event = Event.from_es_dict(hit)
             events.append(event)
@@ -60,7 +54,14 @@ class Event(object):
 
     @staticmethod
     def indices(time_from, time_until):
-        return "events-*"
+        if (time_until-time_from).days > 4:
+            return settings.ELASTICSEARCH_EVENT_FALLBACK_INDEXPATTERN
+        date = time_from
+        indices = []
+        while date <= time_until:
+            indices.append(date.strftime(settings.ELASTICSEARCH_EVENT_INDEXPATTERN))
+            date = date + timedelta(1)
+        return ",".join(indices)
 
     def as_dict(self):
         return dict(
@@ -76,8 +77,7 @@ class Event(object):
         result["@timestamp"] = self.when
         result["message"] = self.what
         result["data"] = self.data
-        for tag in tags:
-            pass
+        return result
 
     @staticmethod
     def from_es_dict(dict):
@@ -94,15 +94,12 @@ class Event(object):
                 if key == "tags":
                     tags.append(" ".join(source[key]))
                 else:
-                    tags.append("%s:%s"%(key, source[key]))
+                    tags.append("%s:%s" % (key, source[key]))
         event.tags = " ".join(tags)
         return event
-    
+
     def save(self):
         pass
-        
 
-# We use this rather than tagging.register() so that tags can be exposed
-# in the admin UI
-# ModelTaggedItemManager().contribute_to_class(Event, 'tagged')
+
 elasticsearchclient = Elasticsearch(settings.ELASTICSEARCH_HOST)
