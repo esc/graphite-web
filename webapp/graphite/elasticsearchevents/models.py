@@ -6,6 +6,7 @@ from elasticsearch import Elasticsearch
 from datetime import timedelta, datetime
 import calendar
 from dateutil import parser
+from collections import defaultdict
 
 def to_millis(datetime_):
     return datetime_.strftime("%s000")
@@ -97,9 +98,13 @@ class Event(object):
         date = day_from
         indices = []
         while date <= day_until:
-            indices.append(date.strftime(settings.ELASTICSEARCH_EVENT_INDEXPATTERN))
+            indices.append(Event.indexForDate(date))
             date = date + timedelta(1)
         return ",".join(indices)
+
+    @staticmethod
+    def indexForDate(date):
+        return date.strftime(settings.ELASTICSEARCH_EVENT_INDEXPATTERN)
 
     def as_dict(self):
         return dict(
@@ -111,10 +116,16 @@ class Event(object):
         )
 
     def as_es_dict(self):
-        result = {}
-        result["@timestamp"] = self.when
+        result = defaultdict(list)
+        result["@timestamp"] = to_millis(self.when)
         result["message"] = self.what
         result["data"] = self.data
+        if self.tags is not None:
+            for tag in self.tags.split(" "):
+                key, sep, val = tag.partition(":")
+                if not sep:
+                    key, val = "tags", key
+                result[key].append(val)
         return result
 
     @staticmethod
@@ -127,17 +138,21 @@ class Event(object):
         if source.get("data") is not None:
             event.data = source["data"]
         tags = []
-        for key in source.keys():
+        for key, val in source.iteritems():
             if key not in ["@timestamp", "message", "data"]:
+                vals = val
+                if isinstance(val, basestring):
+                    vals = [val]
                 if key == "tags":
-                    tags.append(" ".join(source[key]))
+                    prefix = ""
                 else:
-                    tags.append("%s:%s" % (key, source[key]))
+                    prefix = "%s:" % key
+                tags.append(" ".join(['%s%s' % (prefix, val) for val in vals]))
         event.tags = " ".join(tags)
         return event
 
     def save(self):
-        pass
+        elasticsearchclient.index(Event.indexForDate(self.when), "event", body=self.as_es_dict())
 
 
 elasticsearchclient = Elasticsearch(settings.ELASTICSEARCH_HOST)
