@@ -3,7 +3,19 @@ import os
 
 from django.conf import settings
 from elasticsearch import Elasticsearch
-from datetime import timedelta
+from datetime import timedelta, datetime
+import calendar
+from dateutil import parser
+
+def to_millis(datetime_):
+    return datetime_.strftime("%s000")
+
+def datetime_from_something(something):
+    try:
+        timestamp = int(something)/1000
+    except ValueError:
+        timestamp = calendar.timegm(parser.parse(something).timetuple())
+    return datetime.fromtimestamp(timestamp)
 
 class Event(object):
 
@@ -18,21 +30,38 @@ class Event(object):
         return "%s: %s" % (self.when, self.what)
 
     @staticmethod
+    def buildQuery(tags, time_from=None, time_until=None):
+        queries = []
+        if tags is not None:
+            luceneQuery = []
+            for tag in tags:
+                if tag.find(":") > -1:
+                    luceneQuery.append(tag)
+                else:
+                    luceneQuery.append("tags:%s" % tag)
+            queries.append({"query": {"query_string": { "query": " AND ".join(luceneQuery)}}})
+
+        queries.append({"range": {"@timestamp": {"gte": to_millis(time_from), "lte": to_millis(time_until)}}})
+
+        if len(queries) > 0:
+            return {
+                "filter": {
+                    "and": queries
+                },
+                "size": 500
+            }
+        else:
+            return None
+
+    @staticmethod
     def find_events(time_from=None, time_until=None, tags=None):
-        query = {
-            "filter": {
-                "query": {
-                    "query_string": {
-                        "query": "HOST:devexp03"
-                    }
-                }
-            },
-            "size": 500
-        }
+        query = Event.buildQuery(tags, time_from, time_until)
+        return Event._find_events(Event.indices(time_from, time_until), query)
 
+    @staticmethod
+    def _find_events(indices, query):
+        result = elasticsearchclient.search(indices, body=query, ignore_unavailable=True)
         events = list()
-
-        result = elasticsearchclient.search(Event.indices(time_from, time_until), body=query, ignore_indices="missing")
         for hit in result["hits"]["hits"]:
             event = Event.from_es_dict(hit)
             events.append(event)
@@ -53,12 +82,21 @@ class Event(object):
         # return result
 
     @staticmethod
+    def find_event(id):
+        query = {"filter": {"ids":{"values": [id]}}}
+        events = Event._find_events(settings.ELASTICSEARCH_EVENT_FALLBACK_INDEXPATTERN, query)
+        if len(events) > 0:
+            return events[0]
+
+    @staticmethod
     def indices(time_from, time_until):
-        if (time_until-time_from).days > 4:
+        day_from = datetime(time_from.year, time_from.month, time_from.day)
+        day_until = datetime(time_until.year, time_until.month, time_until.day)
+        if (day_until-day_from).days > 4:
             return settings.ELASTICSEARCH_EVENT_FALLBACK_INDEXPATTERN
-        date = time_from
+        date = day_from
         indices = []
-        while date <= time_until:
+        while date <= day_until:
             indices.append(date.strftime(settings.ELASTICSEARCH_EVENT_INDEXPATTERN))
             date = date + timedelta(1)
         return ",".join(indices)
@@ -84,7 +122,7 @@ class Event(object):
         event = Event()
         event.id = dict["_id"]
         source = dict["_source"]
-        event.when = source["@timestamp"]
+        event.when = datetime_from_something(source["@timestamp"])
         event.what = source["message"]
         if source.get("data") is not None:
             event.data = source["data"]

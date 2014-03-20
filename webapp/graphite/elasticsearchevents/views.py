@@ -1,8 +1,8 @@
 import datetime
 import time
 
-from django.http import HttpResponse
-from django.shortcuts import render_to_response, get_object_or_404
+from django.http import HttpResponse, Http404
+from django.shortcuts import render_to_response
 from django.utils.timezone import localtime, now
 from graphite.util import json
 from graphite.elasticsearchevents import models
@@ -32,7 +32,10 @@ def view_events(request):
         return post_event(request)
 
 def detail(request, event_id):
-    e = get_object_or_404(models.Event, pk=event_id)
+    e = models.Event.find_event(event_id)
+    if not e:
+        raise Http404('No Event matches the given query.')
+
     context = { 'event' : e,
        'slash' : get_script_prefix()
     }
@@ -73,7 +76,7 @@ def get_data(request):
     response['Access-Control-Allow-Origin'] = '*'
     response['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
     response['Access-Control-Allow-Headers'] = 'origin, authorization, accept'
-    
+
     return response
 
 def fetch(request):
