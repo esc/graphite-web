@@ -49,6 +49,7 @@ class Event(object):
                 "filter": {
                     "and": queries
                 },
+                "sort": {"@timestamp":{"order":"desc"}},
                 "size": 500
             }
         else:
