@@ -24,7 +24,8 @@ import time
 from graphite.logger import log
 from graphite.render.attime import parseTimeOffset
 
-from graphite.events import models
+from django.conf import settings
+models = __import__("%s.models" % settings.EVENTS_MODULE, globals(), locals(), [""])
 
 #XXX format_units() should go somewhere else
 from os import environ
