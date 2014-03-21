@@ -19,3 +19,5 @@ CACHES = {
 }
 
 LOG_DIR = tempfile.mkdtemp(prefix='graphite-log-test')
+
+ELASTICSEARCH_HOST = "http://localhost:9200"
