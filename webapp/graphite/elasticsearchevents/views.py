@@ -23,9 +23,9 @@ class EventEncoder(json.JSONEncoder):
 
 def view_events(request):
     if request.method == "GET":
-        context = { 'events' : fetch(request),
-            'slash' : get_script_prefix()
-        }
+        context = {'events': fetch(request),
+                   'slash': get_script_prefix()
+                   }
         return render_to_response("events.html", context)
     else:
         return post_event(request)
@@ -36,9 +36,9 @@ def detail(request, event_id):
     if not e:
         raise Http404('No Event matches the given query.')
 
-    context = { 'event' : e,
-       'slash' : get_script_prefix()
-    }
+    context = {'event': e,
+               'slash': get_script_prefix()
+               }
     return render_to_response("event.html", context)
 
 
@@ -66,9 +66,9 @@ def post_event(request):
 def get_data(request):
     if 'jsonp' in request.REQUEST:
         response = HttpResponse(
-          "%s(%s)" % (request.REQUEST.get('jsonp'), 
-              json.dumps(fetch(request), cls=EventEncoder)),
-          mimetype='text/javascript')
+            "%s(%s)" % (request.REQUEST.get('jsonp'),
+            json.dumps(fetch(request), cls=EventEncoder)),
+            mimetype='text/javascript')
     else:
         response = HttpResponse(
             json.dumps(fetch(request), cls=EventEncoder),

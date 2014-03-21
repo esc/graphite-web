@@ -15,7 +15,7 @@ def to_millis(datetime_):
 
 def datetime_from_something(something):
     try:
-        timestamp = int(something)/1000
+        timestamp = int(something) / 1000
     except ValueError:
         timestamp = calendar.timegm(parser.parse(something).timetuple())
     return datetime.fromtimestamp(timestamp)
@@ -43,7 +43,7 @@ class Event(object):
                     luceneQuery.append(tag)
                 else:
                     luceneQuery.append("tags:%s" % tag)
-            queries.append({"query": {"query_string": { "query": " AND ".join(luceneQuery)}}})
+            queries.append({"query": {"query_string": {"query": " AND ".join(luceneQuery)}}})
 
         queries.append({"range": {"@timestamp": {"gte": to_millis(time_from), "lte": to_millis(time_until)}}})
 
@@ -52,7 +52,7 @@ class Event(object):
                 "filter": {
                     "and": queries
                 },
-                "sort": {"@timestamp":{"order":"desc"}},
+                "sort": {"@timestamp": {"order": "desc"}},
                 "size": 500
             }
         else:
@@ -88,7 +88,7 @@ class Event(object):
 
     @staticmethod
     def find_event(id):
-        query = {"filter": {"ids":{"values": [id]}}}
+        query = {"filter": {"ids": {"values": [id]}}}
         events = Event._find_events(settings.ELASTICSEARCH_EVENT_FALLBACK_INDEXPATTERN, query)
         if len(events) > 0:
             return events[0]
@@ -97,7 +97,7 @@ class Event(object):
     def indices(time_from, time_until):
         day_from = datetime(time_from.year, time_from.month, time_from.day)
         day_until = datetime(time_until.year, time_until.month, time_until.day)
-        if (day_until-day_from).days > 4:
+        if (day_until - day_from).days > 4:
             return settings.ELASTICSEARCH_EVENT_FALLBACK_INDEXPATTERN
         date = day_from
         indices = []
