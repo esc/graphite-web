@@ -7,10 +7,15 @@ from collections import defaultdict
 
 
 def to_millis(datetime_):
+    """ Convert a datetime object to milliseconds since epoch. """
     return datetime_.strftime("%s000")
 
 
 def datetime_from_something(something):
+    """ Convert something to to a datetime.
+
+    Something can be either a millisecond timestamp or some kind of date string.
+    """
     try:
         timestamp = int(something) / 1000
     except ValueError:
@@ -19,6 +24,7 @@ def datetime_from_something(something):
 
 
 class Event(object):
+    """ Event Object. """
 
     def __init__(self, when=None, what=None, data=None, tags=None):
         self.id   = -1
@@ -55,6 +61,7 @@ class Event(object):
 
     @staticmethod
     def build_query(tags, time_from=None, time_until=None):
+        """ Build Lucene query string to find events based on tags. """
         queries = Event._build_tag_query_string(tags)
 
         queries.append({"range":
@@ -78,6 +85,7 @@ class Event(object):
 
     @staticmethod
     def find_events(time_from=None, time_until=None, tags=None):
+        """ Find multiple events bases on time and tags. """
         query = Event.build_query(tags, time_from, time_until)
         return Event._find_events(Event.indices(time_from, time_until), query)
 
@@ -106,6 +114,7 @@ class Event(object):
 
     @staticmethod
     def find_event(id):
+        """ Find a single event based on id. """
         query = {"filter": {"ids": {"values": [id]}}}
         events = Event._find_events(settings.ELASTICSEARCH_EVENT_FALLBACK_INDEXPATTERN, query)
         if len(events) > 0:
@@ -113,6 +122,7 @@ class Event(object):
 
     @staticmethod
     def indices(time_from, time_until):
+        """ Create list of index descriptors to search in based on time. """
         day_from = datetime(time_from.year, time_from.month, time_from.day)
         day_until = datetime(time_until.year, time_until.month, time_until.day)
         if (day_until - day_from).days > 4:
@@ -126,9 +136,11 @@ class Event(object):
 
     @staticmethod
     def indexForDate(date):
+        """ Turn a datetime object into an index descriptor string. """
         return date.strftime(settings.ELASTICSEARCH_EVENT_INDEXPATTERN)
 
     def as_dict(self):
+        """ Convert to python dict. """
         return dict(
             when=self.when,
             what=self.what,
@@ -138,6 +150,7 @@ class Event(object):
         )
 
     def as_es_dict(self):
+        """ Convert to dict suitable for inserting into elasticsearch. """
         result = defaultdict(list)
         result["@timestamp"] = to_millis(self.when)
         result["message"] = self.what
@@ -152,6 +165,8 @@ class Event(object):
 
     @staticmethod
     def from_es_dict(dict):
+        """ Convert event dict returned by Elasticsearch into an Event object.
+        """
         event = Event()
         event.id = dict["_id"]
         source = dict["_source"]
@@ -174,6 +189,7 @@ class Event(object):
         return event
 
     def save(self):
+        """ Save this Event object in elasticsearch. """
         elasticsearchclient.index(Event.indexForDate(self.when), "event", body=self.as_es_dict())
 
 
