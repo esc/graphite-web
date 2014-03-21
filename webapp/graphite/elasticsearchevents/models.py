@@ -30,6 +30,12 @@ class Event(object):
     def __str__(self):
         return "%s: %s" % (self.when, self.what)
 
+    def __eq__(self, other):
+        return (self.id == other.id and
+                self.when == other.when and
+                self.data == other.data and
+                self.tags == other.tags)
+
     @staticmethod
     def _build_tag_query_string(tags):
         queries = []
