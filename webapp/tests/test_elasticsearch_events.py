@@ -36,4 +36,3 @@ class TestEventBuildQuery(TestCase):
     def test_build_query_mixing_tag_and_host_tag(self):
         query = Event._build_tag_query_string(['HOST:devfoo01', 'tag1'])
         self.assertEqual(query, self._expected('HOST:devfoo01 AND tags:tag1'))
-
