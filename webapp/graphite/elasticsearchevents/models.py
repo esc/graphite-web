@@ -31,7 +31,7 @@ class Event(object):
         return "%s: %s" % (self.when, self.what)
 
     @staticmethod
-    def buildQuery(tags, time_from=None, time_until=None):
+    def _build_tag_query_string(tags):
         queries = []
         if tags is not None:
             luceneQuery = []
@@ -41,6 +41,11 @@ class Event(object):
                 else:
                     luceneQuery.append("tags:%s" % tag)
             queries.append({"query": {"query_string": {"query": " AND ".join(luceneQuery)}}})
+        return queries
+
+    @staticmethod
+    def buildQuery(tags, time_from=None, time_until=None):
+        queries = Event._build_tag_query_string(tags)
 
         queries.append({"range": {"@timestamp": {"gte": to_millis(time_from), "lte": to_millis(time_until)}}})
 
