@@ -10,7 +10,6 @@ from graphite.render.attime import parseATTime
 from django.core.urlresolvers import get_script_prefix
 
 
-
 def to_timestamp(dt):
     return time.mktime(dt.timetuple())
 
@@ -30,6 +29,7 @@ def view_events(request):
         return render_to_response("events.html", context)
     else:
         return post_event(request)
+
 
 def detail(request, event_id):
     e = models.Event.find_event(event_id)
@@ -62,6 +62,7 @@ def post_event(request):
     else:
         return HttpResponse(status=405)
 
+
 def get_data(request):
     if 'jsonp' in request.REQUEST:
         response = HttpResponse(
@@ -78,6 +79,7 @@ def get_data(request):
     response['Access-Control-Allow-Headers'] = 'origin, authorization, accept'
 
     return response
+
 
 def fetch(request):
     #XXX we need to move to USE_TZ=True to get rid of localtime() conversions

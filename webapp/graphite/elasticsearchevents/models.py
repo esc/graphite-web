@@ -8,8 +8,10 @@ import calendar
 from dateutil import parser
 from collections import defaultdict
 
+
 def to_millis(datetime_):
     return datetime_.strftime("%s000")
+
 
 def datetime_from_something(something):
     try:
@@ -17,6 +19,7 @@ def datetime_from_something(something):
     except ValueError:
         timestamp = calendar.timegm(parser.parse(something).timetuple())
     return datetime.fromtimestamp(timestamp)
+
 
 class Event(object):
 
