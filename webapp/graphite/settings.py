@@ -182,6 +182,10 @@ if not STANDARD_DIRS:
   except ImportError:
     pass
 
+
+# which module to use for the storage and retrieval of events
+EVENTS_MODULE = 'graphite.events'
+
 # Default sqlite db file
 # This is set here so that a user-set STORAGE_DIR is available
 if 'sqlite3' in DATABASES.get('default',{}).get('ENGINE','') \
