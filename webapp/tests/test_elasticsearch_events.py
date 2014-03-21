@@ -65,3 +65,77 @@ class TestIndices(TestCase):
         time_until = datetime(1970, 1, 6)
         indices = Event.indices(time_from, time_until)
         self.assertEqual('events-*', indices)
+
+
+class TestAsDict(TestCase):
+
+    def test_as_dict(self):
+        when = datetime(1970, 1, 1)
+        what = 'title'
+        data = 'message'
+        tags = 'tag1 tag2'
+        event = Event(when=when, what=what, data=data, tags=tags)
+        expected = {'data': 'message',
+                    'what': 'title',
+                    'when': datetime(1970, 1, 1, 0, 0),
+                    'id': -1,
+                    'tags': 'tag1 tag2'}
+        self.assertEqual(expected, event.as_dict())
+
+
+class TestAsEsDict(TestCase):
+
+    def test_as_es_dict(self):
+        when = datetime(1970, 1, 1)
+        what = 'title'
+        data = 'message'
+        tags = 'tag1 tag2'
+        event = Event(when=when, what=what, data=data, tags=tags)
+        expected = {'@timestamp': '21600000',
+                    'data': 'message',
+                    'message': 'title',
+                    'tags': ['tag1', 'tag2']}
+        self.assertEqual(expected, dict(event.as_es_dict()))
+
+    def test_as_es_dict_with_host_tag(self):
+        when = datetime(1970, 1, 1)
+        what = 'title'
+        data = 'message'
+        tags = 'tag1 HOST:devfoo01'
+        event = Event(when=when, what=what, data=data, tags=tags)
+        expected = {'@timestamp': '21600000',
+                    'data': 'message',
+                    'message': 'title',
+                    'tags': ['tag1'],
+                    'HOST': ['devfoo01']}
+        self.assertEqual(expected, dict(event.as_es_dict()))
+
+
+class TestFromEsDict(TestCase):
+
+    def test_from_es_dict_with_tags(self):
+        input = {'_id': -1,
+                 '_source': {'@timestamp': '21600000',
+                             'data': 'message',
+                             'message': 'title',
+                             'tags': ['tag1', 'tag2']}
+                 }
+        expected = Event(when=datetime(1970, 1, 1),
+                         what='title',
+                         data='message',
+                         tags='tag1 tag2')
+        self.assertEqual(expected, Event.from_es_dict(input))
+
+    def test_from_es_dict_with_host_tags(self):
+        input = {'_id': -1,
+                 '_source': {'@timestamp': '21600000',
+                             'data': 'message',
+                             'message': 'title',
+                             'tags': ['tag1'],
+                             'HOST': ['devfoo01']}
+                 }
+        expected = Event(when=datetime(1970, 1, 1),
+                         what='title',
+                         data='message',
+                         tags='HOST:devfoo01 tag1')
+        self.assertEqual(expected, Event.from_es_dict(input))
