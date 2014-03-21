@@ -97,20 +97,6 @@ class Event(object):
             event = Event.from_es_dict(hit)
             events.append(event)
         return events
-        # if tags is not None:
-        #     query = 
-        # else:
-        #     query = Event.objects.all()
-        # 
-        # if time_from is not None:
-        #     query = query.filter(when__gte=time_from)
-        # 
-        # if time_until is not None:
-        #     query = query.filter(when__lte=time_until)
-        # 
-        # 
-        # result = list(query.order_by("when"))
-        # return result
 
     @staticmethod
     def find_event(id):
