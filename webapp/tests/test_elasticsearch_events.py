@@ -16,6 +16,11 @@ class TestEventBuildQuery(TestCase):
         query = Event._build_tag_query_string(['tag1'])
         self.assertEqual(query, self._expected('tags:tag1'))
 
+    def test_build_query_tripple_tag(self):
+        query = Event._build_tag_query_string(['tag1', 'tag2', 'tag3'])
+        self.assertEqual(query,
+            self._expected('tags:tag1 AND tags:tag2 AND tags:tag3'))
+
     def test_build_query_double_tag(self):
         query = Event._build_tag_query_string(['tag1', 'tag2'])
         self.assertEqual(query, self._expected('tags:tag1 AND tags:tag2'))
@@ -27,3 +32,8 @@ class TestEventBuildQuery(TestCase):
     def test_build_query_double_host_tag(self):
         query = Event._build_tag_query_string(['HOST:devfoo01', 'HOST:devfoo02'])
         self.assertEqual(query, self._expected('HOST:devfoo01 AND HOST:devfoo02'))
+
+    def test_build_query_mixing_tag_and_host_tag(self):
+        query = Event._build_tag_query_string(['HOST:devfoo01', 'tag1'])
+        self.assertEqual(query, self._expected('HOST:devfoo01 AND tags:tag1'))
+
