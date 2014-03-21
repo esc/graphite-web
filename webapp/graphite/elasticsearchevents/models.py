@@ -54,7 +54,7 @@ class Event(object):
         return queries
 
     @staticmethod
-    def buildQuery(tags, time_from=None, time_until=None):
+    def build_query(tags, time_from=None, time_until=None):
         queries = Event._build_tag_query_string(tags)
 
         queries.append({"range":
@@ -78,7 +78,7 @@ class Event(object):
 
     @staticmethod
     def find_events(time_from=None, time_until=None, tags=None):
-        query = Event.buildQuery(tags, time_from, time_until)
+        query = Event.build_query(tags, time_from, time_until)
         return Event._find_events(Event.indices(time_from, time_until), query)
 
     @staticmethod
