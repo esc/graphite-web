@@ -1,6 +1,3 @@
-import time
-import os
-
 from django.conf import settings
 from elasticsearch import Elasticsearch
 from datetime import timedelta, datetime
