@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.test import TestCase
 from graphite.elasticsearchevents.models import Event
 
@@ -36,3 +38,30 @@ class TestEventBuildQuery(TestCase):
     def test_build_query_mixing_tag_and_host_tag(self):
         query = Event._build_tag_query_string(['HOST:devfoo01', 'tag1'])
         self.assertEqual(query, self._expected('HOST:devfoo01 AND tags:tag1'))
+
+
+class TestIndices(TestCase):
+
+    def test_indices_no_day_difference(self):
+        time_from = datetime(1970, 1, 1)
+        time_until = datetime(1970, 1, 1)
+        indices = Event.indices(time_from, time_until)
+        self.assertEqual('events-1970-01-01', indices)
+
+    def test_indices_one_day_difference(self):
+        time_from = datetime(1970, 1, 1)
+        time_until = datetime(1970, 1, 2)
+        indices = Event.indices(time_from, time_until)
+        self.assertEqual('events-1970-01-01,events-1970-01-02', indices)
+
+    def test_indices_four_day_difference(self):
+        time_from = datetime(1970, 1, 1)
+        time_until = datetime(1970, 1, 5)
+        indices = Event.indices(time_from, time_until)
+        self.assertEqual('events-1970-01-01,events-1970-01-02,events-1970-01-03,events-1970-01-04,events-1970-01-05', indices)
+
+    def test_indices_beyond_four_day_difference(self):
+        time_from = datetime(1970, 1, 1)
+        time_until = datetime(1970, 1, 6)
+        indices = Event.indices(time_from, time_until)
+        self.assertEqual('events-*', indices)
