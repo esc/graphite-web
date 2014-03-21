@@ -19,10 +19,8 @@ class TestEventBuildQuery(TestCase):
         return expected
 
     def test_build_query_empty_string(self):
-        query = Event.buildQuery('',
-                                 time_from=datetime(1970, 1, 1),
-                                 time_until=datetime(1970, 1, 2))
-        self.assertEqual(query, self._expected())
+        query = Event._build_tag_query_string('')
+        self.assertEqual(query, [{'query': {'query_string': {'query': ''}}}])
 
     def test_build_query_single_tag(self):
         query = Event.buildQuery(['tag1'],
