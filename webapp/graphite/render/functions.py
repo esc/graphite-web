@@ -3037,7 +3037,7 @@ def linregress(requestContext, seriesList, minValidValues=0):
   return result
 
 
-def replace_none(array):
+def _replace_none(array):
     import numpy as np
     run = False
     start = 0
@@ -3112,7 +3112,7 @@ def sixSigma(requestContext,
         new_columns = values.size/new_rows
 
         # replace none values by interpolation
-        replace_none(values)
+        _replace_none(values)
         # cast to float
         values = values.astype('float')
         # reshape the array

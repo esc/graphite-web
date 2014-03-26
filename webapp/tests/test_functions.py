@@ -356,49 +356,49 @@ class TestSixSigma(TestCase):
     def test_replace_single_none(self):
         data = np.array([1, None, 3])
         expected = np.array([1, 2, 3])
-        functions.replace_none(data)
+        functions._replace_none(data)
         npt.assert_array_equal(expected, data)
 
     def test_replace_multiple_none(self):
         data = np.array([1, None, None, 4])
         expected = np.array([1, 2, 3, 4])
-        functions.replace_none(data)
+        functions._replace_none(data)
         npt.assert_array_equal(expected, data)
 
     def test_replace_single_none_at_beginning(self):
         data = np.array([None, 4])
         expected = np.array([4, 4])
-        functions.replace_none(data)
+        functions._replace_none(data)
         npt.assert_array_equal(expected, data)
 
     def test_replace_none_at_beginning(self):
         data = np.array([None, None, None, 4, 5])
         expected = np.array([4, 4, 4, 4, 5])
-        functions.replace_none(data)
+        functions._replace_none(data)
         npt.assert_array_equal(expected, data)
 
     def test_replace_single_none_at_end(self):
         data = np.array([5, None])
         expected = np.array([5, 5])
-        functions.replace_none(data)
+        functions._replace_none(data)
         npt.assert_array_equal(expected, data)
 
     def test_replace_none_at_end(self):
         data = np.array([4, 5, None, None, None])
         expected = np.array([4, 5, 5, 5, 5])
-        functions.replace_none(data)
+        functions._replace_none(data)
         npt.assert_array_equal(expected, data)
 
     def test_replace_all_none(self):
         data = np.array([None, None, None, None, None])
         expected = np.array([None, None, None, None, None])
-        functions.replace_none(data)
+        functions._replace_none(data)
         npt.assert_array_equal(expected, data)
 
     def test_replace_single_none(self):
         data = np.array([None])
         expected = np.array([None])
-        functions.replace_none(data)
+        functions._replace_none(data)
         npt.assert_array_equal(expected, data)
 
 
