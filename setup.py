@@ -82,6 +82,7 @@ try:
         'graphite.composer',
         'graphite.dashboard',
         'graphite.events',
+        'graphite.elasticsearchevents',
         'graphite.finders',
         'graphite.graphlot',
         'graphite.metrics',
