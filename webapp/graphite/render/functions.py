@@ -3059,6 +3059,21 @@ def _replace_none(array):
         array[start:] = array[start-1]
 
 
+def _parse_factor(factor):
+    # parse upper and lower factor
+    try:
+        factor_upper = float(factor)
+        factor_lower = float(factor)
+    except ValueError:
+        factors = factor.split(':')
+        if len(factors) != 2:
+            raise ValueError('The factor must be a float/int or a string describing two numbers seperated by a ":"')
+        factor_lower = float(factors[0])
+        factor_upper = float(factors[1])
+
+    return factor_upper, factor_lower
+
+
 def sixSigma(requestContext,
              seriesList,
              period='7d',
@@ -3084,16 +3099,7 @@ def sixSigma(requestContext,
     if abs(delta) < timedelta(seconds=(end-start)):
         raise ValueError('the rendered time_period between %s and %s was greater than one six sigma period of %s' %(requestContext["startTime"],requestContext["endTime"],period))
 
-    # parse upper and lower factor
-    try:
-        factor_upper = float(factor)
-        factor_lower = float(factor)
-    except ValueError:
-        factors = factor.split(':')
-        if len(factors) != 2:
-            raise ValueError('The factor must be a float/int or a string describing two numbers seperated by a ":"')
-        factor_lower = float(factors[0])
-        factor_upper = float(factors[1])
+    factor_upper, factor_lower = _parse_factor(factor)
 
     # assemble new requestContext object with shifted endTime
     myContext = requestContext.copy()

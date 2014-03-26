@@ -401,6 +401,27 @@ class TestSixSigma(TestCase):
         functions._replace_none(data)
         npt.assert_array_equal(expected, data)
 
+    def test_parse_factor_single_value(self):
+        factor = '3'
+        factor_upper, factor_lower = functions._parse_factor(factor)
+        self.assertEqual(3, factor_upper)
+        self.assertEqual(3, factor_lower)
+
+    def test_parse_factor_double_value_equal(self):
+        factor = '3:3'
+        factor_upper, factor_lower = functions._parse_factor(factor)
+        self.assertEqual(3, factor_upper)
+        self.assertEqual(3, factor_lower)
+
+    def test_parse_factor_double_value_different(self):
+        factor = '3:4'
+        factor_upper, factor_lower = functions._parse_factor(factor)
+        self.assertEqual(4, factor_upper)
+        self.assertEqual(3, factor_lower)
+
+    def test_parse_factor_raises_exception_on_invalid_input(self):
+        factor = '3:4:5'
+        self.assertRaises(ValueError, functions._parse_factor, factor)
 
     @patch('graphite.render.functions.evaluateTarget')
     def test_sixSigma_returns_mean_upper_and_lower_band(self, evaluateTarget_mock):
