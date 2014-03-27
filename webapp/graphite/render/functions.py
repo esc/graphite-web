@@ -20,6 +20,7 @@ import math
 import re
 import random
 import time
+import math
 
 from graphite.logger import log
 from graphite.render.attime import parseTimeOffset
@@ -3168,7 +3169,7 @@ def sixSigma(requestContext,
 
         back_cut = (requestContext['startTime'] - (_align_to_hour(requestContext['endTime'], 'forward') +
             delta)).total_seconds() / series.step
-        to_keep = slice(int(back_cut), -1 * int(front_cut))
+        to_keep = slice(int(math.ceil(back_cut)), -1 * int(math.floor(front_cut)))
 
         # keep only the relevant bins
         keep_mean = interpolated_mean[to_keep]
