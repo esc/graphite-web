@@ -3086,8 +3086,6 @@ def _six_sigma_core(values, repeats):
         values = values.astype('float')
         # reshape the array
         values = values.reshape(new_rows, new_columns)
-        # remove the last row, which is the current week
-        values = values[:-1, :]
         # calculate the mean across weeks
         values_mean = values.mean(axis=0)
         # calculate the standard deviation across weeks
@@ -3132,12 +3130,18 @@ def sixSigma(requestContext,
     end = to_epoch(_align_to_hour(requestContext['endTime'], 'forward'))
     factor_upper, factor_lower = _parse_factor(factor)
 
-    # assemble new requestContext object with shifted endTime
+    log.info('requestContext: %s' % str(requestContext))
     myContext = requestContext.copy()
-    myContext['startTime'] = requestContext['endTime'] + delta * repeats
+    # new endTime is the last full hour minus the period
+    myContext['endTime'] = _align_to_hour(requestContext['endTime'], 'backwards') + delta
+    # new startTime is the endTime shited back by the period times repeats
+    myContext['startTime'] = myContext['endTime'] + delta * repeats
+    myContext.pop('data')
+    log.info('myContext: %s' % str(myContext))
     result = []
     series = seriesList[0]
     for shifted in evaluateTarget(myContext, series.pathExpression):
+        log.info('length of shifted: %d' % len(shifted))
 
         # preserve orig name, when only one metric was provided
         if len(seriesList) == 1:
