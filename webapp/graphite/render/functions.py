@@ -3126,8 +3126,8 @@ def sixSigma(requestContext,
                 'the rendered time_period between %s and %s was greater than one six sigma period of %s'
                 % (requestContext["startTime"], requestContext["endTime"], period))
 
-    start = to_epoch(_align_to_hour(requestContext['startTime'], 'backward'))
-    end = to_epoch(_align_to_hour(requestContext['endTime'], 'forward'))
+    start = to_epoch(requestContext['startTime'])
+    end = to_epoch(requestContext['endTime'])
     factor_upper, factor_lower = _parse_factor(factor)
 
     log.info('requestContext: %s' % str(requestContext))
