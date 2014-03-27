@@ -351,7 +351,7 @@ class TestLinregress(TestCase):
         self.assertEqual(2, len(ans[1]))
 
 
-class TestSixSigma(TestCase):
+class TestSixSigmaHelpers(TestCase):
 
     def test_replace_single_none(self):
         data = np.array([1, None, 3])
@@ -471,55 +471,52 @@ class TestSixSigma(TestCase):
         npt.assert_array_equal([2., 2.], mean)
         npt.assert_array_equal([1., 1.], std)
 
-    @patch('graphite.render.functions.evaluateTarget')
-    def test_sixSigma_returns_mean_upper_and_lower_band(self, evaluateTarget_mock):
-        test_data = TimeSeries('test-data', 0, 1, 1, [1])
-        test_data.pathExpression = 'foo'
-        test_context = {"startTime": datetime.datetime.fromtimestamp(90),
-                        "endTime": datetime.datetime.fromtimestamp(100),
-                        }
-        returned_test_data = TimeSeries('full-data',0,100,1,
-                                        np.hstack([np.arange(10) for i in range(10)]))
-        evaluateTarget_mock.return_value = [returned_test_data]
-        ans = functions.sixSigma(test_context,
-                                 [test_data],
-                                 period='10s',
-                                 repeats=10,
-                                 factor='3:4'
-                                 )
-        self.assertEqual("sixSigmaMean(%s, period='-10s', repeats=10)" %test_data.name, ans[0].name)
-        self.assertEqual("sixSigmaUpper(%s, period='-10s', repeats=10, factor=4.0)" % test_data.name, ans[1].name)
-        self.assertEqual("sixSigmaLower(%s, period='-10s', repeats=10, factor=3.0)" % test_data.name, ans[2].name)
 
-    @patch('graphite.render.functions.evaluateTarget')
-    def test_sixSigma_has_default_arguments(self, evaluateTarget_mock):
+class TestSixSigma(TestCase):
+
+    def setUp(self):
         test_data = TimeSeries('test-data', 0, 1, 1, [1])
         test_data.pathExpression = 'foo'
         test_context = {"startTime": datetime.datetime(year=2014,month=6,day=1, hour=0),
                         "endTime": datetime.datetime(year=2014,month=6,day=1, hour=2),
                         }
+        self.test_data = test_data
+        self.test_context = test_context
+
+    @patch('graphite.render.functions.evaluateTarget')
+    def test_sixSigma_returns_mean_upper_and_lower_band(self, evaluateTarget_mock):
+        returned_test_data = TimeSeries('full-data', 0, 100, 1,
+                                        np.hstack([np.arange(10) for i in range(10)]))
+        evaluateTarget_mock.return_value = [returned_test_data]
+        ans = functions.sixSigma(self.test_context,
+                                 [self.test_data],
+                                 period='2h',
+                                 repeats=10,
+                                 factor='3:4'
+                                 )
+        self.assertEqual("sixSigmaMean(%s, period='-2h', repeats=10)" % self.test_data.name, ans[0].name)
+        self.assertEqual("sixSigmaUpper(%s, period='-2h', repeats=10, factor=4.0)" % self.test_data.name, ans[1].name)
+        self.assertEqual("sixSigmaLower(%s, period='-2h', repeats=10, factor=3.0)" % self.test_data.name, ans[2].name)
+
+    @patch('graphite.render.functions.evaluateTarget')
+    def test_sixSigma_has_default_arguments(self, evaluateTarget_mock):
         returned_test_data = TimeSeries('full-data',0,100,1,
                                         np.hstack([np.arange(7*24) for i in range(8)]))
         evaluateTarget_mock.return_value = [returned_test_data]
-        ans = functions.sixSigma(test_context,
-                                 [test_data]
+        ans = functions.sixSigma(self.test_context,
+                                 [self.test_data]
         )
-        self.assertEqual("sixSigmaMean(%s, period='-7d', repeats=8)" % test_data.name, ans[0].name)
-        self.assertEqual("sixSigmaUpper(%s, period='-7d', repeats=8, factor=3.0)" % test_data.name, ans[1].name)
-        self.assertEqual("sixSigmaLower(%s, period='-7d', repeats=8, factor=3.0)" % test_data.name, ans[2].name)
+        self.assertEqual("sixSigmaMean(%s, period='-7d', repeats=8)" % self.test_data.name, ans[0].name)
+        self.assertEqual("sixSigmaUpper(%s, period='-7d', repeats=8, factor=3.0)" % self.test_data.name, ans[1].name)
+        self.assertEqual("sixSigmaLower(%s, period='-7d', repeats=8, factor=3.0)" % self.test_data.name, ans[2].name)
 
     @patch('graphite.render.functions.evaluateTarget')
     def test_sixSigma_works(self, evaluateTarget_mock):
-        test_data = TimeSeries('test-data', 0, 1, 1, [1])
-        test_data.pathExpression = 'foo'
-        test_context = {"startTime": datetime.datetime(year=2014, month=6, day=1, hour=0),
-                        "endTime": datetime.datetime(year=2014, month=6, day=1, hour=2),
-                        }
         returned_test_data = TimeSeries('full-data', 0, 100, 1,
                                         (np.hstack([np.arange(7*24) for i in range(8)])))
         evaluateTarget_mock.return_value = [returned_test_data]
-        ans = functions.sixSigma(test_context,
-                                 [test_data]
+        ans = functions.sixSigma(self.test_context,
+                                 [self.test_data]
         )
         # the mean is zero, so the upper and lower bands should equal the mean
         npt.assert_array_equal(ans[0], ans[1])
@@ -528,17 +525,12 @@ class TestSixSigma(TestCase):
 
     @patch('graphite.render.functions.evaluateTarget')
     def test_sixSigma_mean_upper_and_lower_band_differ_when_std_deviation_is_not_zero(self, evaluateTarget_mock):
-        test_data = TimeSeries('test-data', 0, 1, 1, [1])
-        test_data.pathExpression = 'foo'
-        test_context = {"startTime": datetime.datetime(year=2014,month=6,day=1, hour=0),
-                        "endTime": datetime.datetime(year=2014,month=6,day=1, hour=2),
-                        }
         returned_test_data = TimeSeries('full-data',0,100,1,
                 np.concatenate((np.arange(start=0, stop=7*2400,
                     step=100),np.hstack([np.arange(7*24) for i in range(7)]))))
         evaluateTarget_mock.return_value = [returned_test_data]
-        ans = functions.sixSigma(test_context,
-                                 [test_data]
+        ans = functions.sixSigma(self.test_context,
+                                 [self.test_data]
         )
         self.assertRaises(AssertionError, npt.assert_array_equal, ans[0], ans[1])
         self.assertRaises(AssertionError, npt.assert_array_equal, ans[0], ans[2])
@@ -546,17 +538,12 @@ class TestSixSigma(TestCase):
 
     @patch('graphite.render.functions.evaluateTarget')
     def test_sixSigma_has_predictable_std(self, evaluateTarget_mock):
-        test_data = TimeSeries('test-data', 0, 1, 1, [1])
-        test_data.pathExpression = 'foo'
-        test_context = {"startTime": datetime.datetime(year=2014, month=6, day=1, hour=0),
-                        "endTime": datetime.datetime(year=2014, month=6, day=1, hour=2),
-                        }
         returned_test_data = TimeSeries('full-data', 0, 100, 1,
                 np.concatenate([np.ones(672), np.zeros(672)])
                 )
         evaluateTarget_mock.return_value = [returned_test_data]
-        ans = functions.sixSigma(test_context,
-                                 [test_data]
+        ans = functions.sixSigma(self.test_context,
+                                 [self.test_data]
         )
         npt.assert_array_equal(np.ones(168) * 0.5, ans[0])
         npt.assert_array_equal(np.ones(168) * 2.0, ans[1])
