@@ -453,7 +453,6 @@ class TestSixSigma(TestCase):
         expected = datetime.datetime(1970, 1, 2, 0, 0, 0, 0)
         self.assertEqual(expected, received)
 
-
     def test_six_sigma_core_basic(self):
         values = np.array([1, 1, 1, 1])
         mean, std = functions._six_sigma_core(values, 2)
