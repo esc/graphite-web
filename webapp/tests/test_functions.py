@@ -466,8 +466,8 @@ class TestSixSigma(TestCase):
         npt.assert_array_equal([0., 0., 0., 0.], std)
 
     def test_six_sigma_core_change_mean_and_std(self):
-        values = np.array([1, 1, 3, 3, 1, 1])
-        mean, std = functions._six_sigma_core(values, 3)
+        values = np.array([1, 1, 3, 3])
+        mean, std = functions._six_sigma_core(values, 2)
         npt.assert_array_equal([2., 2.], mean)
         npt.assert_array_equal([1., 1.], std)
 

@@ -3136,7 +3136,6 @@ def sixSigma(requestContext,
     myContext['endTime'] = _align_to_hour(requestContext['endTime'], 'backwards') + delta
     # new startTime is the endTime shited back by the period times repeats
     myContext['startTime'] = myContext['endTime'] + delta * repeats
-    myContext.pop('data')
     log.info('myContext: %s' % str(myContext))
     result = []
     series = seriesList[0]
