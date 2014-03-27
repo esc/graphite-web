@@ -423,6 +423,37 @@ class TestSixSigma(TestCase):
         factor = '3:4:5'
         self.assertRaises(ValueError, functions._parse_factor, factor)
 
+    def test_align_to_hour_works_forward(self):
+        value = datetime.datetime(1970, 1, 1, 12, 0, 0, 0)
+        received = functions._align_to_hour(value, 'forward')
+        expected = datetime.datetime(1970, 1, 1, 13, 0, 0, 0)
+        self.assertEqual(expected, received)
+
+    def test_align_to_hour_works_backward(self):
+        value = datetime.datetime(1970, 1, 1, 12, 0, 0, 0)
+        received = functions._align_to_hour(value, 'backward')
+        expected = datetime.datetime(1970, 1, 1, 12, 0, 0, 0)
+        self.assertEqual(expected, received)
+
+    def test_align_to_hour_works_forward_reset_sub_hour(self):
+        value = datetime.datetime(1970, 1, 1, 12, 1, 2, 3)
+        received = functions._align_to_hour(value, 'forward')
+        expected = datetime.datetime(1970, 1, 1, 13, 0, 0, 0)
+        self.assertEqual(expected, received)
+
+    def test_align_to_hour_works_backward_reset_sub_hour(self):
+        value = datetime.datetime(1970, 1, 1, 12, 1, 2, 3)
+        received = functions._align_to_hour(value, 'backward')
+        expected = datetime.datetime(1970, 1, 1, 12, 0, 0, 0)
+        self.assertEqual(expected, received)
+
+    def test_align_to_hour_works_forward_across_days(self):
+        value = datetime.datetime(1970, 1, 1, 23, 1, 2, 3)
+        received = functions._align_to_hour(value, 'forward')
+        expected = datetime.datetime(1970, 1, 2, 0, 0, 0, 0)
+        self.assertEqual(expected, received)
+
+
     def test_six_sigma_core_basic(self):
         values = np.array([1, 1, 1, 1])
         mean, std = functions._six_sigma_core(values, 2)

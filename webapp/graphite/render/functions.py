@@ -3096,6 +3096,12 @@ def _six_sigma_core(values, repeats):
         return values_mean, values_std
 
 
+def _align_to_hour(value, type):
+    one_hour_delta = (timedelta(seconds=3600)
+                      if type == 'forward' else timedelta(seconds=0))
+    return value.replace(minute=0, second=0, microsecond=0) + one_hour_delta
+
+
 def sixSigma(requestContext,
              seriesList,
              period='7d',
@@ -3115,25 +3121,15 @@ def sixSigma(requestContext,
         period = '-' + period
 
     delta = parseTimeOffset(period)
-    one_hour_delta = timedelta(seconds=360)
 
     # check six sigma period is not smaller than viewed time_period
     if abs(delta) < requestContext['endTime'] - requestContext['startTime']:
         raise ValueError(
                 'the rendered time_period between %s and %s was greater than one six sigma period of %s'
-                % (requestContext["startTime"],requestContext["endTime"],period))
+                % (requestContext["startTime"], requestContext["endTime"], period))
 
-    start_datetime = requestContext["startTime"]
-    start_datetime_aligned = start_datetime.replace(
-        minute=0, second=0, microsecond=0) - one_hour_delta
-    start = to_epoch(start_datetime_aligned)
-
-    end_datetime = requestContext["endTime"]
-    end_datetime_aligned = end_datetime.replace(
-        minute=0, second=0, microsecond=0) + one_hour_delta
-    end = to_epoch(end_datetime_aligned)
-
-
+    start = to_epoch(_align_to_hour(requestContext['startTime'], 'backward'))
+    end = to_epoch(_align_to_hour(requestContext['endTime'], 'forward'))
     factor_upper, factor_lower = _parse_factor(factor)
 
     # assemble new requestContext object with shifted endTime
