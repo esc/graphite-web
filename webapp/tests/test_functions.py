@@ -423,6 +423,24 @@ class TestSixSigma(TestCase):
         factor = '3:4:5'
         self.assertRaises(ValueError, functions._parse_factor, factor)
 
+    def test_six_sigma_core_basic(self):
+        values = np.array([1, 1, 1, 1])
+        mean, std = functions._six_sigma_core(values, 2)
+        npt.assert_array_equal([1., 1.], mean)
+        npt.assert_array_equal([0., 0.], std)
+
+    def test_six_sigma_core_different_array_lengths(self):
+        values = np.array([1, 1, 1, 1, 1, 1, 1, 1])
+        mean, std = functions._six_sigma_core(values, 2)
+        npt.assert_array_equal([1., 1., 1., 1.], mean)
+        npt.assert_array_equal([0., 0., 0., 0.], std)
+
+    def test_six_sigma_core_change_mean_and_std(self):
+        values = np.array([1, 1, 3, 3, 1, 1])
+        mean, std = functions._six_sigma_core(values, 3)
+        npt.assert_array_equal([2., 2.], mean)
+        npt.assert_array_equal([1., 1.], std)
+
     @patch('graphite.render.functions.evaluateTarget')
     def test_sixSigma_returns_mean_upper_and_lower_band(self, evaluateTarget_mock):
         test_data = TimeSeries('test-data', 0, 1, 1, [1])
