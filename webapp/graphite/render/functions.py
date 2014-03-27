@@ -3074,12 +3074,10 @@ def _parse_factor(factor):
     return factor_upper, factor_lower
 
 
-def _six_sigma_core(shifted, repeats, end, start):
+def _six_sigma_core(values, repeats):
 
-        import numpy as np
 
         # do the six sigma algorithm
-        values = np.asarray(shifted)
         new_rows = repeats
         new_columns = values.size / new_rows
 
@@ -3096,12 +3094,6 @@ def _six_sigma_core(shifted, repeats, end, start):
         # calculate the standard deviation across weeks
         values_std = values.std(axis=0)
 
-        # figure out how many bins to keep
-        to_keep = ((end - start) / shifted.step) + 1
-        # keep only the relevant bins
-        values_mean = values_mean[-to_keep:]
-        values_std = values_std[-to_keep:]
-
         return values_mean, values_std
 
 
@@ -3110,6 +3102,8 @@ def sixSigma(requestContext,
              period='7d',
              repeats=8,
              factor=3):
+
+    import numpy as np
 
     if not seriesList:
         return
@@ -3152,7 +3146,18 @@ def sixSigma(requestContext,
         if len(seriesList) == 1:
             shifted.name = series.name
 
-        values_mean, values_std = _six_sigma_core(shifted, repeats, end, start)
+        # convert to numpy array
+        values = np.asarray(shifted)
+
+        # do the core of the sixSigma
+        values_mean, values_std = _six_sigma_core(values, repeats)
+
+        # post process
+        # figure out how many bins to keep
+        to_keep = ((end - start) / shifted.step) + 1
+        # keep only the relevant bins
+        values_mean = values_mean[-to_keep:]
+        values_std = values_std[-to_keep:]
 
         # assemble return values
         # the mean itself
