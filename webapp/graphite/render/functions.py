@@ -3125,7 +3125,6 @@ def sixSigma(requestContext,
     if not seriesList:
         return
 
-
     # Default to negative. parseTimeOffset defaults to +
     if period[0].isdigit():
         period = '-' + period
