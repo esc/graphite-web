@@ -3131,14 +3131,15 @@ def sixSigma(requestContext,
 
     delta = parseTimeOffset(period)
 
+    start = requestContext['startTime']
+    end = requestContext['endTime']
+
     # check six sigma period is not smaller than viewed time_period
-    if abs(delta) < requestContext['endTime'] - requestContext['startTime']:
+    if abs(delta) < end - start:
         raise ValueError(
                 'the rendered time_period between %s and %s was greater than one six sigma period of %s'
-                % (requestContext["startTime"], requestContext["endTime"], period))
+                % (start, end, period))
 
-    start = to_epoch(requestContext['startTime'])
-    end = to_epoch(requestContext['endTime'])
     factor_upper, factor_lower = _parse_factor(factor)
 
     myContext = _create_my_context(requestContext, delta, repeats, )
@@ -3183,22 +3184,22 @@ def sixSigma(requestContext,
         # the mean itself
         result_mean = TimeSeries("sixSigmaMean(%s, period='%s', repeats=%i)"
                                  % (shifted.name, period, repeats),
-                                 start,
-                                 end,
+                                 to_epoch(start),
+                                 to_epoch(end),
                                  series.step,
                                  list(keep_mean))
         # the upper boundary
         result_upper = TimeSeries("sixSigmaUpper(%s, period='%s', repeats=%i, factor=%s)"
                                   % (shifted.name, period, repeats, factor_upper),
-                                  start,
-                                  end,
+                                  to_epoch(start),
+                                  to_epoch(end),
                                   series.step,
                                   list(keep_mean + factor_upper * keep_std))
         # the lower boundary
         result_lower = TimeSeries("sixSigmaLower(%s, period='%s', repeats=%i, factor=%s)"
                                   % (shifted.name, period, repeats, factor_lower),
-                                  start,
-                                  end,
+                                  to_epoch(start),
+                                  to_epoch(end),
                                   series.step,
                                   list(keep_mean - factor_lower * keep_std))
         result.extend([result_mean,
