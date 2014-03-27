@@ -3157,29 +3157,29 @@ def sixSigma(requestContext,
         # assemble return values
         # the mean itself
         result_mean = TimeSeries("sixSigmaMean(%s, period='%s', repeats=%i)"
-                                % (shifted.name, period, repeats),
-                                start,
-                                end,
-                                shifted.step,
-                                list(values_mean))
+                                 % (shifted.name, period, repeats),
+                                 start,
+                                 end,
+                                 shifted.step,
+                                 list(values_mean))
         # the upper boundary
         result_upper = TimeSeries("sixSigmaUpper(%s, period='%s', repeats=%i, factor=%s)"
-                                % (shifted.name, period, repeats, factor_upper),
-                                start,
-                                end,
-                                shifted.step,
-                                list(values_mean + factor_upper * values_std))
+                                  % (shifted.name, period, repeats, factor_upper),
+                                  start,
+                                  end,
+                                  shifted.step,
+                                  list(values_mean + factor_upper * values_std))
         # the lower boundary
         result_lower = TimeSeries("sixSigmaLower(%s, period='%s', repeats=%i, factor=%s)"
-                                % (shifted.name, period, repeats, factor_lower),
-                                start,
-                                end,
-                                shifted.step,
-                                list(values_mean - factor_lower * values_std))
+                                  % (shifted.name, period, repeats, factor_lower),
+                                  start,
+                                  end,
+                                  shifted.step,
+                                  list(values_mean - factor_lower * values_std))
         result.extend([result_mean,
-                result_upper,
-                result_lower,
-                ])
+                       result_upper,
+                       result_lower,
+                       ])
     return result
 
 def pieAverage(requestContext, series):
