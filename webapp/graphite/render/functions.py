@@ -3115,22 +3115,24 @@ def sixSigma(requestContext,
         period = '-' + period
 
     delta = parseTimeOffset(period)
+    one_hour_delta = timedelta(seconds=360)
+
+    # check six sigma period is not smaller than viewed time_period
+    if abs(delta) < requestContext['endTime'] - requestContext['startTime']:
+        raise ValueError(
+                'the rendered time_period between %s and %s was greater than one six sigma period of %s'
+                % (requestContext["startTime"],requestContext["endTime"],period))
 
     start_datetime = requestContext["startTime"]
     start_datetime_aligned = start_datetime.replace(
-        hour=start_datetime.hour - 1, minute=0, second=0, microsecond=0)
+        minute=0, second=0, microsecond=0) - one_hour_delta
     start = to_epoch(start_datetime_aligned)
 
     end_datetime = requestContext["endTime"]
     end_datetime_aligned = end_datetime.replace(
-        hour=end_datetime.hour + 1, minute=0, second=0, microsecond=0)
+        minute=0, second=0, microsecond=0) + one_hour_delta
     end = to_epoch(end_datetime_aligned)
 
-    # check six sigma period is not smaller than viewed time_period
-    if abs(delta) < timedelta(seconds=(end-start)):
-        raise ValueError(
-                'the rendered time_period between %s and %s was greater than one six sigma period of %s'
-                % (requestContext["startTime"],requestContext["endTime"],period))
 
     factor_upper, factor_lower = _parse_factor(factor)
 
