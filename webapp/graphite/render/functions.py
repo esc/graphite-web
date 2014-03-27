@@ -3100,6 +3100,7 @@ def _align_to_hour(value, type):
                       if type == 'forward' else timedelta(seconds=0))
     return value.replace(minute=0, second=0, microsecond=0) + one_hour_delta
 
+
 def _create_my_context(requestContext, delta, repeats):
     myContext = requestContext.copy()
     # new endTime is the last full hour minus the period
@@ -3107,6 +3108,11 @@ def _create_my_context(requestContext, delta, repeats):
     # new startTime is the endTime shited back by the period times repeats
     myContext['startTime'] = myContext['endTime'] + delta * repeats
     return myContext
+
+
+def to_epoch(datetime_object):
+    return int(time.mktime(datetime_object.timetuple()))
+
 
 def sixSigma(requestContext,
              seriesList,
@@ -3119,8 +3125,6 @@ def sixSigma(requestContext,
     if not seriesList:
         return
 
-    def to_epoch(datetime_object):
-        return int(time.mktime(datetime_object.timetuple()))
 
     # Default to negative. parseTimeOffset defaults to +
     if period[0].isdigit():
