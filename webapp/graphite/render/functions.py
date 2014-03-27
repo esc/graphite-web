@@ -3074,6 +3074,37 @@ def _parse_factor(factor):
     return factor_upper, factor_lower
 
 
+def _six_sigma_core(shifted, repeats, end, start):
+
+        import numpy as np
+
+        # do the six sigma algorithm
+        values = np.asarray(shifted)
+        new_rows = repeats
+        new_columns = values.size / new_rows
+
+        # replace none values by interpolation
+        _replace_none(values)
+        # cast to float
+        values = values.astype('float')
+        # reshape the array
+        values = values.reshape(new_rows, new_columns)
+        # remove the last row, which is the current week
+        values = values[:-1, :]
+        # calculate the mean across weeks
+        values_mean = values.mean(axis=0)
+        # calculate the standard deviation across weeks
+        values_std = values.std(axis=0)
+
+        # figure out how many bins to keep
+        to_keep = ((end - start) / shifted.step) + 1
+        # keep only the relevant bins
+        values_mean = values_mean[-to_keep:]
+        values_std = values_std[-to_keep:]
+
+        return values_mean, values_std
+
+
 def sixSigma(requestContext,
              seriesList,
              period='7d',
@@ -3082,8 +3113,6 @@ def sixSigma(requestContext,
 
     if not seriesList:
         return
-
-    import numpy as np
 
     def to_epoch(datetime_object):
         return int(time.mktime(datetime_object.timetuple()))
@@ -3115,29 +3144,7 @@ def sixSigma(requestContext,
         if len(seriesList) == 1:
             shifted.name = series.name
 
-        # do the six sigma algorithm
-        values = np.asarray(shifted)
-        new_rows = repeats
-        new_columns = values.size/new_rows
-
-        # replace none values by interpolation
-        _replace_none(values)
-        # cast to float
-        values = values.astype('float')
-        # reshape the array
-        values = values.reshape(new_rows, new_columns)
-        # remove the last row, which is the current week
-        values = values[:-1,:]
-        # calculate the mean across weeks
-        values_mean = values.mean(axis=0)
-        # calculate the standard deviation across weeks
-        values_std = values.std(axis=0)
-
-        # figure out how many bins to keep
-        to_keep = ((end-start) / shifted.step ) + 1
-        # keep only the relevant bins
-        values_mean = values_mean[-to_keep:]
-        values_std = values_std[-to_keep:]
+        values_mean, values_std = _six_sigma_core(shifted, repeats, end, start)
 
         # assemble return values
         # the mean itself
