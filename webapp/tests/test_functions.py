@@ -340,7 +340,7 @@ class TestLinregress(TestCase):
     def test_linregress_returns_multiple_series(self):
         test_data = [TimeSeries('test-data-one', 0, 100, 2, range(0, 200, 4)),
                      TimeSeries('test-data-two', 0, 100, 4, range(0, 200, 8))
-                    ]
+                     ]
         test_context = {"startTime": datetime.datetime.fromtimestamp(0),
                         "endTime": datetime.datetime.fromtimestamp(200),
                         }
