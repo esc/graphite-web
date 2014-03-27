@@ -3166,15 +3166,10 @@ def sixSigma(requestContext,
         interpolated_mean = np.interp(new_x, old_x, values_mean)
         interpolated_std = np.interp(new_x, old_x, values_std)
 
-
-        # First figure out the different between the original end and the hourly
-        # aligned end.
+        # keep only the relevant bins
         front_cut = (_align_to_hour(end, 'forward') - end).total_seconds() / series.step
-
         back_cut = (start - (_align_to_hour(end, 'forward') + delta)).total_seconds() / series.step
         to_keep = slice(int(math.ceil(back_cut)), -1 * int(math.floor(front_cut)))
-
-        # keep only the relevant bins
         keep_mean = interpolated_mean[to_keep]
         keep_std = interpolated_std[to_keep]
 
