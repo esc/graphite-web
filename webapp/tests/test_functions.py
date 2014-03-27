@@ -534,7 +534,6 @@ class TestSixSigma(TestCase):
         test_context = {"startTime": datetime.datetime(year=2014,month=6,day=1, hour=0),
                         "endTime": datetime.datetime(year=2014,month=6,day=1, hour=2),
                         }
-        # create a series with std deviation creating values in the first period (-8weeks)
         returned_test_data = TimeSeries('full-data',0,100,1,
                 np.concatenate((np.arange(start=0, stop=7*2400,
                     step=100),np.hstack([np.arange(7*24) for i in range(7)]))))
@@ -544,3 +543,23 @@ class TestSixSigma(TestCase):
         )
         self.assertRaises(AssertionError, npt.assert_array_equal, ans[0], ans[1])
         self.assertRaises(AssertionError, npt.assert_array_equal, ans[0], ans[2])
+
+
+    @patch('graphite.render.functions.evaluateTarget')
+    def test_sixSigma_has_predictable_std(self, evaluateTarget_mock):
+        test_data = TimeSeries('test-data', 0, 1, 1, [1])
+        test_data.pathExpression = 'foo'
+        test_context = {"startTime": datetime.datetime(year=2014, month=6, day=1, hour=0),
+                        "endTime": datetime.datetime(year=2014, month=6, day=1, hour=2),
+                        }
+        returned_test_data = TimeSeries('full-data', 0, 100, 1,
+                np.concatenate([np.ones(672), np.zeros(672)])
+                )
+        evaluateTarget_mock.return_value = [returned_test_data]
+        ans = functions.sixSigma(test_context,
+                                 [test_data]
+        )
+        npt.assert_array_equal(np.ones(168) * 0.5, ans[0])
+        npt.assert_array_equal(np.ones(168) * 2.0, ans[1])
+        npt.assert_array_equal(np.ones(168) * -1.0, ans[2])
+
