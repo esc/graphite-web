@@ -3076,7 +3076,6 @@ def _parse_factor(factor):
 
 def _six_sigma_core(values, repeats):
 
-
         # do the six sigma algorithm
         new_rows = repeats
         new_columns = values.size / new_rows
