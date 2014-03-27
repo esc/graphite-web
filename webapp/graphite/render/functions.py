@@ -3129,8 +3129,10 @@ def sixSigma(requestContext,
     if period[0].isdigit():
         period = '-' + period
 
+    # Convert period into a timedelta object
     delta = parseTimeOffset(period)
 
+    # assign start and end for easy reuse
     start = requestContext['startTime']
     end = requestContext['endTime']
 
@@ -3140,12 +3142,15 @@ def sixSigma(requestContext,
                 'the rendered time_period between %s and %s was greater than one six sigma period of %s'
                 % (start, end, period))
 
+    # parse the factor argument
     factor_upper, factor_lower = _parse_factor(factor)
 
+    # create a new request context for fetching the data to do sixSigma on
     myContext = _create_my_context(requestContext, delta, repeats, )
 
     result = []
     series = seriesList[0]
+    # fetch the data, and then operate on it
     for shifted in evaluateTarget(myContext, series.pathExpression):
 
         # preserve orig name, when only one metric was provided
@@ -3158,7 +3163,9 @@ def sixSigma(requestContext,
         # do the core of the sixSigma
         values_mean, values_std = _six_sigma_core(values, repeats)
 
-        # do a linear interpolation of the mean and variance
+        # Do a linear interpolation of the mean and variance.
+        # Effectively, this brings the mean and varianec to the same resolution
+        # as the original series.
         period_start = to_epoch(myContext['endTime'])
         period_end = to_epoch(myContext['endTime'] + delta)
         old_x = np.arange(period_end, period_start, shifted.step)
@@ -3166,10 +3173,12 @@ def sixSigma(requestContext,
         interpolated_mean = np.interp(new_x, old_x, values_mean)
         interpolated_std = np.interp(new_x, old_x, values_std)
 
-        # keep only the relevant bins
+        # keep only the relevant bins, remove unused part from beginning and
+        # end
         front_cut = (_align_to_hour(end, 'forward') - end).total_seconds() / series.step
         back_cut = (start - (_align_to_hour(end, 'forward') + delta)).total_seconds() / series.step
-        to_keep = slice(int(math.ceil(back_cut)), -1 * int(math.floor(front_cut)))
+        to_keep = slice(int(math.ceil(back_cut)),
+                        int(math.floor(front_cut)) * -1)
         keep_mean = interpolated_mean[to_keep]
         keep_std = interpolated_std[to_keep]
 
