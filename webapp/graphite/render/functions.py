@@ -3160,12 +3160,20 @@ def sixSigma(requestContext,
         interpolated_mean = np.interp(new_x, old_x, values_mean)
         interpolated_std = np.interp(new_x, old_x, values_std)
 
-        # post process
-        # figure out how many bins to keep
-        to_keep = ((end - start) / shifted.step) + 1
+
+        # First figure out the different between the original end and the hourly
+        # aligned end.
+        front_cut = (_align_to_hour(requestContext['endTime'], 'forward') -
+                requestContext['endTime']).total_seconds() / series.step
+
+        back_cut = (requestContext['startTime'] - (_align_to_hour(requestContext['endTime'], 'forward') +
+            delta)).total_seconds() / series.step
+
+
+        to_keep = slice(int(back_cut), -1 * int(front_cut-1))
         # keep only the relevant bins
-        values_mean = values_mean[-to_keep:]
-        values_std = values_std[-to_keep:]
+        keep_mean = interpolated_mean[to_keep]
+        keep_std = interpolated_std[to_keep]
 
         # assemble return values
         # the mean itself
@@ -3173,22 +3181,22 @@ def sixSigma(requestContext,
                                  % (shifted.name, period, repeats),
                                  start,
                                  end,
-                                 shifted.step,
-                                 list(values_mean))
+                                 series.step,
+                                 list(keep_mean))
         # the upper boundary
         result_upper = TimeSeries("sixSigmaUpper(%s, period='%s', repeats=%i, factor=%s)"
                                   % (shifted.name, period, repeats, factor_upper),
                                   start,
                                   end,
-                                  shifted.step,
-                                  list(values_mean + factor_upper * values_std))
+                                  series.step,
+                                  list(keep_mean + factor_upper * keep_std))
         # the lower boundary
         result_lower = TimeSeries("sixSigmaLower(%s, period='%s', repeats=%i, factor=%s)"
                                   % (shifted.name, period, repeats, factor_lower),
                                   start,
                                   end,
-                                  shifted.step,
-                                  list(values_mean - factor_lower * values_std))
+                                  series.step,
+                                  list(keep_mean - factor_lower * keep_std))
         result.extend([result_mean,
                        result_upper,
                        result_lower,
