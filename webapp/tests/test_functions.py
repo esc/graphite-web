@@ -395,7 +395,7 @@ class TestSixSigma(TestCase):
         functions._replace_none(data)
         npt.assert_array_equal(expected, data)
 
-    def test_replace_single_none(self):
+    def test_replace_single_none_alone(self):
         data = np.array([None])
         expected = np.array([None])
         functions._replace_none(data)
