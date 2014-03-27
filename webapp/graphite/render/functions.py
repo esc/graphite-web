@@ -3082,6 +3082,7 @@ def sixSigma(requestContext,
 
     if not seriesList:
         return
+
     import numpy as np
 
     def to_epoch(datetime_object):
