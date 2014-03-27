@@ -3122,8 +3122,16 @@ def sixSigma(requestContext,
         period = '-' + period
 
     delta = parseTimeOffset(period)
-    start = to_epoch(requestContext["startTime"])
-    end = to_epoch(requestContext["endTime"])
+
+    start_datetime = requestContext["startTime"]
+    start_datetime_aligned = start_datetime.replace(
+        hour=start_datetime.hour - 1, minute=0, second=0, microsecond=0)
+    start = to_epoch(start_datetime_aligned)
+
+    end_datetime = requestContext["endTime"]
+    end_datetime_aligned = end_datetime.replace(
+        hour=end_datetime.hour + 1, minute=0, second=0, microsecond=0)
+    end = to_epoch(end_datetime_aligned)
 
     # check six sigma period is not smaller than viewed time_period
     if abs(delta) < timedelta(seconds=(end-start)):
