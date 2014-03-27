@@ -508,7 +508,6 @@ class TestSixSigma(TestCase):
         self.assertEqual("sixSigmaUpper(%s, period='-7d', repeats=8, factor=3.0)" % test_data.name, ans[1].name)
         self.assertEqual("sixSigmaLower(%s, period='-7d', repeats=8, factor=3.0)" % test_data.name, ans[2].name)
 
-
     @patch('graphite.render.functions.evaluateTarget')
     def test_sixSigma_works(self, evaluateTarget_mock):
         test_data = TimeSeries('test-data', 0, 1, 1, [1])
@@ -517,7 +516,7 @@ class TestSixSigma(TestCase):
                         "endTime": datetime.datetime(year=2014, month=6, day=1, hour=2),
                         }
         returned_test_data = TimeSeries('full-data', 0, 100, 1,
-                (np.hstack([np.arange(7*24) for i in range(8)])))
+                                        (np.hstack([np.arange(7*24) for i in range(8)])))
         evaluateTarget_mock.return_value = [returned_test_data]
         ans = functions.sixSigma(test_context,
                                  [test_data]
