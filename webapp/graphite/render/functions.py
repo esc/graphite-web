@@ -3169,11 +3169,9 @@ def sixSigma(requestContext,
 
         # First figure out the different between the original end and the hourly
         # aligned end.
-        front_cut = (_align_to_hour(requestContext['endTime'], 'forward') -
-                requestContext['endTime']).total_seconds() / series.step
+        front_cut = (_align_to_hour(end, 'forward') - end).total_seconds() / series.step
 
-        back_cut = (requestContext['startTime'] - (_align_to_hour(requestContext['endTime'], 'forward') +
-            delta)).total_seconds() / series.step
+        back_cut = (start - (_align_to_hour(end, 'forward') + delta)).total_seconds() / series.step
         to_keep = slice(int(math.ceil(back_cut)), -1 * int(math.floor(front_cut)))
 
         # keep only the relevant bins
