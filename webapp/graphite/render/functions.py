@@ -3133,7 +3133,7 @@ def sixSigma(requestContext,
     log.info('requestContext: %s' % str(requestContext))
     myContext = requestContext.copy()
     # new endTime is the last full hour minus the period
-    myContext['endTime'] = _align_to_hour(requestContext['endTime'], 'backwards') + delta
+    myContext['endTime'] = _align_to_hour(requestContext['endTime'], 'forwards') + delta
     # new startTime is the endTime shited back by the period times repeats
     myContext['startTime'] = myContext['endTime'] + delta * repeats
     log.info('myContext: %s' % str(myContext))
