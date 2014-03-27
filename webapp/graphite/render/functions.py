@@ -3152,6 +3152,14 @@ def sixSigma(requestContext,
         # do the core of the sixSigma
         values_mean, values_std = _six_sigma_core(values, repeats)
 
+        # do a linear interpolation of the mean and variance
+        period_start = to_epoch(myContext['endTime'])
+        period_end = to_epoch(myContext['endTime'] + delta)
+        old_x = np.arange(period_end, period_start, shifted.step)
+        new_x = np.arange(period_end, period_start, series.step)
+        interpolated_mean = np.interp(new_x, old_x, values_mean)
+        interpolated_std = np.interp(new_x, old_x, values_std)
+
         # post process
         # figure out how many bins to keep
         to_keep = ((end - start) / shifted.step) + 1
