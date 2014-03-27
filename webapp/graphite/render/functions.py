@@ -3100,6 +3100,13 @@ def _align_to_hour(value, type):
                       if type == 'forward' else timedelta(seconds=0))
     return value.replace(minute=0, second=0, microsecond=0) + one_hour_delta
 
+def _create_my_context(requestContext, delta, repeats):
+    myContext = requestContext.copy()
+    # new endTime is the last full hour minus the period
+    myContext['endTime'] = _align_to_hour(requestContext['endTime'], 'forwards') + delta
+    # new startTime is the endTime shited back by the period times repeats
+    myContext['startTime'] = myContext['endTime'] + delta * repeats
+    return myContext
 
 def sixSigma(requestContext,
              seriesList,
@@ -3131,17 +3138,11 @@ def sixSigma(requestContext,
     end = to_epoch(requestContext['endTime'])
     factor_upper, factor_lower = _parse_factor(factor)
 
-    log.info('requestContext: %s' % str(requestContext))
-    myContext = requestContext.copy()
-    # new endTime is the last full hour minus the period
-    myContext['endTime'] = _align_to_hour(requestContext['endTime'], 'forwards') + delta
-    # new startTime is the endTime shited back by the period times repeats
-    myContext['startTime'] = myContext['endTime'] + delta * repeats
-    log.info('myContext: %s' % str(myContext))
+    myContext = _create_my_context(requestContext, delta, repeats, )
+
     result = []
     series = seriesList[0]
     for shifted in evaluateTarget(myContext, series.pathExpression):
-        log.info('length of shifted: %d' % len(shifted))
 
         # preserve orig name, when only one metric was provided
         if len(seriesList) == 1:
