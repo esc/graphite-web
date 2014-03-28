@@ -3096,15 +3096,19 @@ def _six_sigma_core(values, repeats):
 
 
 def _align_to_hour(value, type):
-    one_hour_delta = (timedelta(seconds=3600)
-                      if type == 'forward' else timedelta(seconds=0))
-    return value.replace(minute=0, second=0, microsecond=0) + one_hour_delta
+    if type == 'forward':
+        delta = timedelta(seconds=3600)
+    elif type == 'backward':
+        delta = timedelta(seconds=0)
+    else:
+        raise ValueError('Received %s' % type)
+    return value.replace(minute=0, second=0, microsecond=0) + delta
 
 
 def _create_my_context(requestContext, delta, repeats):
     myContext = requestContext.copy()
     # new endTime is the last full hour minus the period
-    myContext['endTime'] = _align_to_hour(requestContext['endTime'], 'forwards') + delta
+    myContext['endTime'] = _align_to_hour(requestContext['endTime'], 'forward') + delta
     # new startTime is the endTime shited back by the period times repeats
     myContext['startTime'] = myContext['endTime'] + delta * repeats
     return myContext
@@ -3146,7 +3150,7 @@ def sixSigma(requestContext,
     factor_upper, factor_lower = _parse_factor(factor)
 
     # create a new request context for fetching the data to do sixSigma on
-    myContext = _create_my_context(requestContext, delta, repeats, )
+    myContext = _create_my_context(requestContext, delta, repeats)
 
     result = []
     series = seriesList[0]
@@ -3164,7 +3168,7 @@ def sixSigma(requestContext,
         values_mean, values_std = _six_sigma_core(values, repeats)
 
         # Do a linear interpolation of the mean and variance.
-        # Effectively, this brings the mean and varianec to the same resolution
+        # Effectively, this brings the mean and variance to the same resolution
         # as the original series.
         period_start = to_epoch(myContext['endTime'])
         period_end = to_epoch(myContext['endTime'] + delta)
