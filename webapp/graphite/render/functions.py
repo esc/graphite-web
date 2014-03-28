@@ -3190,22 +3190,22 @@ def sixSigma(requestContext,
         # the mean itself
         result_mean = TimeSeries("sixSigmaMean(%s, period='%s', repeats=%i)"
                                  % (shifted.name, period, repeats),
-                                 to_epoch(start),
-                                 to_epoch(end),
+                                 series.start,
+                                 series.end,
                                  series.step,
                                  list(keep_mean))
         # the upper boundary
         result_upper = TimeSeries("sixSigmaUpper(%s, period='%s', repeats=%i, factor=%s)"
                                   % (shifted.name, period, repeats, factor_upper),
-                                  to_epoch(start),
-                                  to_epoch(end),
+                                  series.start,
+                                  series.end,
                                   series.step,
                                   list(keep_mean + factor_upper * keep_std))
         # the lower boundary
         result_lower = TimeSeries("sixSigmaLower(%s, period='%s', repeats=%i, factor=%s)"
                                   % (shifted.name, period, repeats, factor_lower),
-                                  to_epoch(start),
-                                  to_epoch(end),
+                                  series.start,
+                                  series.end,
                                   series.step,
                                   list(keep_mean - factor_lower * keep_std))
         result.extend([result_mean,
