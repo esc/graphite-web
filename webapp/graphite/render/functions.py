@@ -3095,6 +3095,20 @@ def _six_sigma_core(values, repeats):
         return values_mean, values_std
 
 
+def _interpolate(time_, delta, original_step, new_step, mean, std):
+        import numpy as np
+        # Do a linear interpolation of the mean and variance.
+        # Effectively, this brings the mean and variance to the same resolution
+        # as the original series.
+        period_start = to_epoch(time_)
+        period_end = to_epoch(time_ + delta)
+        old_x = np.arange(period_end, period_start, original_step)
+        new_x = np.arange(period_end, period_start, new_step)
+        interpolated_mean = np.interp(new_x, old_x, mean)
+        interpolated_std = np.interp(new_x, old_x, std)
+        return interpolated_mean, interpolated_std
+
+
 def _align_to_hour(value, type):
     if type == 'forward':
         delta = timedelta(seconds=3600)
@@ -3167,15 +3181,14 @@ def sixSigma(requestContext,
         # do the core of the sixSigma
         values_mean, values_std = _six_sigma_core(values, repeats)
 
-        # Do a linear interpolation of the mean and variance.
-        # Effectively, this brings the mean and variance to the same resolution
-        # as the original series.
-        period_start = to_epoch(myContext['endTime'])
-        period_end = to_epoch(myContext['endTime'] + delta)
-        old_x = np.arange(period_end, period_start, shifted.step)
-        new_x = np.arange(period_end, period_start, series.step)
-        interpolated_mean = np.interp(new_x, old_x, values_mean)
-        interpolated_std = np.interp(new_x, old_x, values_std)
+        # do the interpolation
+        interpolated_mean, interpolated_std = \
+                _interpolate(myContext['endTime'],
+                             delta,
+                             shifted.step,
+                             series.step,
+                             values_mean,
+                             values_std)
 
         # keep only the relevant bins, remove unused part from beginning and
         # end
