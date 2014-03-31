@@ -3179,33 +3179,34 @@ def sixSigma(requestContext,
 
         # keep only the relevant bins, remove unused part from beginning and
         # end
-        front_cut = (_align_to_hour(end, 'forward') - end).total_seconds() / series.step
-        back_cut = (start - (_align_to_hour(end, 'forward') + delta)).total_seconds() / series.step
+        front_cut = (shifted.end - delta.total_seconds() - series.end) / series.step
+        back_cut = (series.start -  shifted.end) / series.step
         to_keep = slice(int(math.ceil(back_cut)),
                         int(math.floor(front_cut)) * -1)
         keep_mean = interpolated_mean[to_keep]
         keep_std = interpolated_std[to_keep]
+        assert(len(keep_mean) == len(series))
 
         # assemble return values
         # the mean itself
         result_mean = TimeSeries("sixSigmaMean(%s, period='%s', repeats=%i)"
                                  % (shifted.name, period, repeats),
                                  series.start,
-                                 series.end,
+                                 shifted.end,
                                  series.step,
                                  list(keep_mean))
         # the upper boundary
         result_upper = TimeSeries("sixSigmaUpper(%s, period='%s', repeats=%i, factor=%s)"
                                   % (shifted.name, period, repeats, factor_upper),
                                   series.start,
-                                  series.end,
+                                  shifted.end,
                                   series.step,
                                   list(keep_mean + factor_upper * keep_std))
         # the lower boundary
         result_lower = TimeSeries("sixSigmaLower(%s, period='%s', repeats=%i, factor=%s)"
                                   % (shifted.name, period, repeats, factor_lower),
                                   series.start,
-                                  series.end,
+                                  shifted.end,
                                   series.step,
                                   list(keep_mean - factor_lower * keep_std))
         result.extend([result_mean,
