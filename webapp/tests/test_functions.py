@@ -504,6 +504,8 @@ class TestSixSigma(TestCase):
             interpolate_mock, evaluateTarget_mock):
         returned_test_data = TimeSeries('full-data', 0, 100, 1,
                                         np.hstack([np.arange(10) for i in range(10)]))
+        interpolate_mock.return_value = (np.array([1]), np.array([1]))
+        keep_mock.return_value = slice(0, 1)
         evaluateTarget_mock.return_value = [returned_test_data]
         ans = functions.sixSigma(self.test_context,
                                  [self.test_data],
