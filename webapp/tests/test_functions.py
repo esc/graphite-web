@@ -483,20 +483,6 @@ class TestSixSigma(TestCase):
         self.test_data = test_data
         self.test_context = test_context
 
-    @patch('graphite.render.functions.evaluateTarget')
-    def test_sixSigma_returns_mean_upper_and_lower_band(self, evaluateTarget_mock):
-        returned_test_data = TimeSeries('full-data', 0, 100, 1,
-                                        np.hstack([np.arange(10) for i in range(10)]))
-        evaluateTarget_mock.return_value = [returned_test_data]
-        ans = functions.sixSigma(self.test_context,
-                                 [self.test_data],
-                                 period='2h',
-                                 repeats=10,
-                                 factor='3:4'
-                                 )
-        self.assertEqual("sixSigmaMean(%s, period='-2h', repeats=10)" % self.test_data.name, ans[0].name)
-        self.assertEqual("sixSigmaUpper(%s, period='-2h', repeats=10, factor=4.0)" % self.test_data.name, ans[1].name)
-        self.assertEqual("sixSigmaLower(%s, period='-2h', repeats=10, factor=3.0)" % self.test_data.name, ans[2].name)
 
     @patch('graphite.render.functions.evaluateTarget')
     @patch('graphite.render.functions._interpolate')
@@ -512,33 +498,19 @@ class TestSixSigma(TestCase):
         self.assertEqual("sixSigmaLower(%s, period='-7d', repeats=8, factor=3.0)" % self.test_data.name, ans[2].name)
 
     @patch('graphite.render.functions.evaluateTarget')
-    def test_sixSigma_works(self, evaluateTarget_mock):
+    @patch('graphite.render.functions._interpolate')
+    @patch('graphite.render.functions._keep_slice')
+    def test_sixSigma_returns_mean_upper_and_lower_band(self, keep_mock,
+            interpolate_mock, evaluateTarget_mock):
         returned_test_data = TimeSeries('full-data', 0, 100, 1,
-                                        (np.hstack([np.arange(7 * 24) for i in range(8)])))
+                                        np.hstack([np.arange(10) for i in range(10)]))
         evaluateTarget_mock.return_value = [returned_test_data]
-        ans = functions.sixSigma(self.test_context, [self.test_data])
-        # the mean is zero, so the upper and lower bands should equal the mean
-        npt.assert_array_equal(ans[0], ans[1])
-        npt.assert_array_equal(ans[0], ans[2])
-
-    @patch('graphite.render.functions.evaluateTarget')
-    def test_sixSigma_mean_upper_and_lower_band_differ_when_std_deviation_is_not_zero(self, evaluateTarget_mock):
-        returned_test_data = TimeSeries('full-data', 0, 100, 1,
-                                        np.concatenate(
-                                            (np.arange(start=0, stop=7 * 2400, step=100),
-                                             np.hstack([np.arange(7 * 24) for i in range(7)]))))
-        evaluateTarget_mock.return_value = [returned_test_data]
-        ans = functions.sixSigma(self.test_context, [self.test_data])
-        self.assertRaises(AssertionError, npt.assert_array_equal, ans[0], ans[1])
-        self.assertRaises(AssertionError, npt.assert_array_equal, ans[0], ans[2])
-
-    @patch('graphite.render.functions.evaluateTarget')
-    def test_sixSigma_has_predictable_std(self, evaluateTarget_mock):
-        returned_test_data = TimeSeries('full-data', 0, 100, 1,
-                                        np.concatenate([np.ones(672),
-                                                        np.zeros(672)]))
-        evaluateTarget_mock.return_value = [returned_test_data]
-        ans = functions.sixSigma(self.test_context, [self.test_data])
-        npt.assert_array_equal(np.ones(168) * 0.5, ans[0])
-        npt.assert_array_equal(np.ones(168) * 2.0, ans[1])
-        npt.assert_array_equal(np.ones(168) * -1.0, ans[2])
+        ans = functions.sixSigma(self.test_context,
+                                 [self.test_data],
+                                 period='2h',
+                                 repeats=10,
+                                 factor='3:4'
+                                 )
+        self.assertEqual("sixSigmaMean(%s, period='-2h', repeats=10)" % self.test_data.name, ans[0].name)
+        self.assertEqual("sixSigmaUpper(%s, period='-2h', repeats=10, factor=4.0)" % self.test_data.name, ans[1].name)
+        self.assertEqual("sixSigmaLower(%s, period='-2h', repeats=10, factor=3.0)" % self.test_data.name, ans[2].name)
