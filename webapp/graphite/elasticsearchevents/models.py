@@ -8,7 +8,7 @@ from collections import defaultdict
 
 def to_millis(datetime_):
     """ Convert a datetime object to milliseconds since epoch. """
-    return datetime_.strftime("%s000")
+    return str(int(datetime_.strftime("%s")) * 1000)
 
 
 def datetime_from_something(something):
