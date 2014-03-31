@@ -91,7 +91,7 @@ class TestAsEsDict(TestCase):
         data = 'message'
         tags = 'tag1 tag2'
         event = Event(when=when, what=what, data=data, tags=tags)
-        expected = {'@timestamp': '21600000',
+        expected = {'@timestamp': '0000',
                     'data': 'message',
                     'message': 'title',
                     'tags': ['tag1', 'tag2']}
@@ -103,7 +103,7 @@ class TestAsEsDict(TestCase):
         data = 'message'
         tags = 'tag1 HOST:devfoo01'
         event = Event(when=when, what=what, data=data, tags=tags)
-        expected = {'@timestamp': '21600000',
+        expected = {'@timestamp': '0000',
                     'data': 'message',
                     'message': 'title',
                     'tags': ['tag1'],
@@ -115,7 +115,7 @@ class TestFromEsDict(TestCase):
 
     def test_from_es_dict_with_tags(self):
         input = {'_id': -1,
-                 '_source': {'@timestamp': '21600000',
+                 '_source': {'@timestamp': '0000',
                              'data': 'message',
                              'message': 'title',
                              'tags': ['tag1', 'tag2']}
@@ -128,7 +128,7 @@ class TestFromEsDict(TestCase):
 
     def test_from_es_dict_with_host_tags(self):
         input = {'_id': -1,
-                 '_source': {'@timestamp': '21600000',
+                 '_source': {'@timestamp': '0000',
                              'data': 'message',
                              'message': 'title',
                              'tags': ['tag1'],
