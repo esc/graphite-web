@@ -499,9 +499,13 @@ class TestSixSigma(TestCase):
         self.assertEqual("sixSigmaLower(%s, period='-2h', repeats=10, factor=3.0)" % self.test_data.name, ans[2].name)
 
     @patch('graphite.render.functions.evaluateTarget')
-    def test_sixSigma_has_default_arguments(self, evaluateTarget_mock):
+    @patch('graphite.render.functions._interpolate')
+    @patch('graphite.render.functions._keep_slice')
+    def test_sixSigma_has_default_arguments(self, keep_mock, interpolate_mock, evaluateTarget_mock):
         returned_test_data = TimeSeries('full-data', 0, 100, 1, np.hstack([np.arange(7 * 24) for i in range(8)]))
         evaluateTarget_mock.return_value = [returned_test_data]
+        interpolate_mock.return_value = (np.array([1]), np.array([1]))
+        keep_mock.return_value = slice(0, 1)
         ans = functions.sixSigma(self.test_context, [self.test_data])
         self.assertEqual("sixSigmaMean(%s, period='-7d', repeats=8)" % self.test_data.name, ans[0].name)
         self.assertEqual("sixSigmaUpper(%s, period='-7d', repeats=8, factor=3.0)" % self.test_data.name, ans[1].name)
