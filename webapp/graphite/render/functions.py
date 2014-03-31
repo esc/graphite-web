@@ -3137,6 +3137,16 @@ def _total_seconds(timedelta_):
     return (timedelta_.microseconds + (timedelta_.seconds + timedelta_.days * 24 * 3600) * 10**6) / float(10**6)
 
 
+def _keep_slice(shifted, series, delta):
+    # keep only the relevant bins, remove unused part from beginning and
+    # end
+    front_cut = (shifted.end - _total_seconds(delta) - series.end) / series.step
+    back_cut = (series.start -  shifted.end) / series.step
+    to_keep = slice(int(math.ceil(back_cut)),
+                    int(math.floor(front_cut)) * -1)
+    return to_keep
+
+
 def sixSigma(requestContext,
              seriesList,
              period='7d',
@@ -3195,12 +3205,7 @@ def sixSigma(requestContext,
                              values_mean,
                              values_std)
 
-        # keep only the relevant bins, remove unused part from beginning and
-        # end
-        front_cut = (shifted.end - _total_seconds(delta) - series.end) / series.step
-        back_cut = (series.start -  shifted.end) / series.step
-        to_keep = slice(int(math.ceil(back_cut)),
-                        int(math.floor(front_cut)) * -1)
+        to_keep = _keep_slice(shifted, series, delta)
         keep_mean = interpolated_mean[to_keep]
         keep_std = interpolated_std[to_keep]
         assert(len(keep_mean) == len(series))
