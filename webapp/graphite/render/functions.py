@@ -3132,6 +3132,11 @@ def to_epoch(datetime_object):
     return int(time.mktime(datetime_object.timetuple()))
 
 
+def _total_seconds(timedelta_):
+    """ Timedelta total_seconds for compatability with Python 2.6. """
+    return (timedelta_.microseconds + (timedelta_.seconds + timedelta_.days * 24 * 3600) * 10**6) / float(10**6)
+
+
 def sixSigma(requestContext,
              seriesList,
              period='7d',
@@ -3192,7 +3197,7 @@ def sixSigma(requestContext,
 
         # keep only the relevant bins, remove unused part from beginning and
         # end
-        front_cut = (shifted.end - delta.total_seconds() - series.end) / series.step
+        front_cut = (shifted.end - _total_seconds(delta) - series.end) / series.step
         back_cut = (series.start -  shifted.end) / series.step
         to_keep = slice(int(math.ceil(back_cut)),
                         int(math.floor(front_cut)) * -1)
