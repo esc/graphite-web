@@ -3169,11 +3169,6 @@ def sixSigma(requestContext,
     start = requestContext['startTime']
     end = requestContext['endTime']
 
-    # check six sigma period is not smaller than viewed time_period
-    if abs(delta) < end - start:
-        raise ValueError(
-                'the rendered time_period between %s and %s was greater than one six sigma period of %s'
-                % (start, end, period))
 
     # parse the factor argument
     factor_upper, factor_lower = _parse_factor(factor)
@@ -3205,30 +3200,38 @@ def sixSigma(requestContext,
                              values_mean,
                              values_std)
 
-        to_keep = _keep_slice(shifted, series, delta)
-        keep_mean = interpolated_mean[to_keep]
-        keep_std = interpolated_std[to_keep]
-        assert(len(keep_mean) == len(series))
+        if abs(delta) > end - start:
+            # if the sixSigma period is larger than the requested time range
+            start = series.start
+            to_keep = _keep_slice(shifted, series, delta)
+            keep_mean = interpolated_mean[to_keep]
+            keep_std = interpolated_std[to_keep]
+            assert(len(keep_mean) == len(series))
+        else:
+            front_cut = (shifted.end - _total_seconds(delta) - series.end) / series.step
+            start = shifted.end
+            keep_mean = interpolated_mean[:-front_cut]
+            keep_std = interpolated_std[:-front_cut]
 
         # assemble return values
         # the mean itself
         result_mean = TimeSeries("sixSigmaMean(%s, period='%s', repeats=%i)"
                                  % (shifted.name, period, repeats),
-                                 series.start,
+                                 start,
                                  shifted.end,
                                  series.step,
                                  list(keep_mean))
         # the upper boundary
         result_upper = TimeSeries("sixSigmaUpper(%s, period='%s', repeats=%i, factor=%s)"
                                   % (shifted.name, period, repeats, factor_upper),
-                                  series.start,
+                                  start,
                                   shifted.end,
                                   series.step,
                                   list(keep_mean + factor_upper * keep_std))
         # the lower boundary
         result_lower = TimeSeries("sixSigmaLower(%s, period='%s', repeats=%i, factor=%s)"
                                   % (shifted.name, period, repeats, factor_lower),
-                                  series.start,
+                                  start,
                                   shifted.end,
                                   series.step,
                                   list(keep_mean - factor_lower * keep_std))
