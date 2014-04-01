@@ -74,10 +74,6 @@ def get_data(request):
             json.dumps(fetch(request), cls=EventEncoder),
             mimetype="application/json")
 
-    response['Access-Control-Allow-Origin'] = '*'
-    response['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
-    response['Access-Control-Allow-Headers'] = 'origin, authorization, accept'
-
     return response
 
 
