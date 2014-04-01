@@ -130,6 +130,9 @@ DATABASES = {
 # If using rrdcached, set to the address or socket of the daemon
 FLUSHRRDCACHED = ''
 
+# which module to use for the storage and retrieval of events
+EVENTS_MODULE = 'graphite.events'
+
 ## Load our local_settings
 try:
   from graphite.local_settings import *
@@ -181,6 +184,8 @@ if not STANDARD_DIRS:
       STANDARD_DIRS.append(RRD_DIR)
   except ImportError:
     pass
+
+
 
 # Default sqlite db file
 # This is set here so that a user-set STORAGE_DIR is available

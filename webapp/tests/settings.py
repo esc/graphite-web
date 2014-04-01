@@ -19,3 +19,10 @@ CACHES = {
 }
 
 LOG_DIR = tempfile.mkdtemp(prefix='graphite-log-test')
+
+ELASTICSEARCH_HOST = "http://localhost:9200"
+ELASTICSEARCH_EVENT_INDEXPATTERN = 'events-%Y-%m-%d'
+ELASTICSEARCH_EVENT_FALLBACK_INDEXPATTERN = 'events-*'
+
+TIME_ZONE = 'UTC'
+

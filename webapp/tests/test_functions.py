@@ -1,6 +1,12 @@
 import copy
+import datetime
+
+
 from django.test import TestCase
 from mock import patch, call, MagicMock
+import numpy as np
+import numpy.testing as npt
+
 
 from graphite.render.datalib import TimeSeries
 from graphite.render import functions
@@ -295,3 +301,218 @@ class FunctionsTest(TestCase):
             results = functions.reduceSeries({}, copy.deepcopy(inputList), "mock", 2, "metric1","metric2" )
             self.assertEqual(results,expectedResult)
         self.assertEqual(mock.mock_calls, [call({},inputList[0]), call({},inputList[1])])
+
+class TestLinregress(TestCase):
+
+    def test_linregress_is_sane(self):
+        test_data = TimeSeries('test-data', 0, 100, 2, range(0, 200, 4))
+
+        test_context = {"startTime": datetime.datetime.fromtimestamp(0),
+                        "endTime": datetime.datetime.fromtimestamp(100),
+                        }
+        ans = functions.linregress(test_context, [test_data])
+        self.assertEqual(2, len(ans[0]))
+        self.assertEqual('linregress(test-data)', ans[0].name)
+        self.assertEqual(0, ans[0][0])
+        self.assertEqual(200, ans[0][1])
+
+    def test_linregress_returns_future_values(self):
+
+        test_data = TimeSeries('test-data', 0, 100, 2, range(0, 200, 4))
+        test_context = {"startTime": datetime.datetime.fromtimestamp(0),
+                        "endTime": datetime.datetime.fromtimestamp(200),
+                        }
+        ans = functions.linregress(test_context, [test_data])
+        self.assertEqual(2, len(ans[0]))
+        self.assertEqual(0, ans[0][0])
+        self.assertEqual(400, ans[0][1])
+
+    def test_linregress_returns_no_series_when_amount_of_nones_is_to_high(self):
+        test_data_values = range(0, 20, 4)
+        test_data_values[1] = None
+        test_data = TimeSeries('test-data', 0, 20, 4, test_data_values)
+        test_context = {"startTime": datetime.datetime.fromtimestamp(0),
+                        "endTime": datetime.datetime.fromtimestamp(20),
+                        }
+        ans = functions.linregress(test_context, [test_data], minValidValues=0.9)
+        self.assertEqual(0, len(ans))
+
+    def test_linregress_returns_multiple_series(self):
+        test_data = [TimeSeries('test-data-one', 0, 100, 2, range(0, 200, 4)),
+                     TimeSeries('test-data-two', 0, 100, 4, range(0, 200, 8))
+                     ]
+        test_context = {"startTime": datetime.datetime.fromtimestamp(0),
+                        "endTime": datetime.datetime.fromtimestamp(200),
+                        }
+        ans = functions.linregress(test_context, test_data)
+
+        self.assertEqual(2, len(ans))
+        self.assertEqual(2, len(ans[0]))
+        self.assertEqual(2, len(ans[1]))
+
+
+class TestSixSigmaHelpers(TestCase):
+
+    def test_replace_single_none(self):
+        data = np.array([1, None, 3])
+        expected = np.array([1, 2, 3])
+        functions._replace_none(data)
+        npt.assert_array_equal(expected, data)
+
+    def test_replace_multiple_none(self):
+        data = np.array([1, None, None, 4])
+        expected = np.array([1, 2, 3, 4])
+        functions._replace_none(data)
+        npt.assert_array_equal(expected, data)
+
+    def test_replace_single_none_at_beginning(self):
+        data = np.array([None, 4])
+        expected = np.array([4, 4])
+        functions._replace_none(data)
+        npt.assert_array_equal(expected, data)
+
+    def test_replace_none_at_beginning(self):
+        data = np.array([None, None, None, 4, 5])
+        expected = np.array([4, 4, 4, 4, 5])
+        functions._replace_none(data)
+        npt.assert_array_equal(expected, data)
+
+    def test_replace_single_none_at_end(self):
+        data = np.array([5, None])
+        expected = np.array([5, 5])
+        functions._replace_none(data)
+        npt.assert_array_equal(expected, data)
+
+    def test_replace_none_at_end(self):
+        data = np.array([4, 5, None, None, None])
+        expected = np.array([4, 5, 5, 5, 5])
+        functions._replace_none(data)
+        npt.assert_array_equal(expected, data)
+
+    def test_replace_all_none(self):
+        data = np.array([None, None, None, None, None])
+        expected = np.array([None, None, None, None, None])
+        functions._replace_none(data)
+        npt.assert_array_equal(expected, data)
+
+    def test_replace_single_none_alone(self):
+        data = np.array([None])
+        expected = np.array([None])
+        functions._replace_none(data)
+        npt.assert_array_equal(expected, data)
+
+    def test_parse_factor_single_value(self):
+        factor = '3'
+        factor_upper, factor_lower = functions._parse_factor(factor)
+        self.assertEqual(3, factor_upper)
+        self.assertEqual(3, factor_lower)
+
+    def test_parse_factor_double_value_equal(self):
+        factor = '3:3'
+        factor_upper, factor_lower = functions._parse_factor(factor)
+        self.assertEqual(3, factor_upper)
+        self.assertEqual(3, factor_lower)
+
+    def test_parse_factor_double_value_different(self):
+        factor = '3:4'
+        factor_upper, factor_lower = functions._parse_factor(factor)
+        self.assertEqual(4, factor_upper)
+        self.assertEqual(3, factor_lower)
+
+    def test_parse_factor_raises_exception_on_invalid_input(self):
+        factor = '3:4:5'
+        self.assertRaises(ValueError, functions._parse_factor, factor)
+
+    def test_align_to_hour_works_forward(self):
+        value = datetime.datetime(1970, 1, 1, 12, 0, 0, 0)
+        received = functions._align_to_hour(value, 'forward')
+        expected = datetime.datetime(1970, 1, 1, 13, 0, 0, 0)
+        self.assertEqual(expected, received)
+
+    def test_align_to_hour_works_backward(self):
+        value = datetime.datetime(1970, 1, 1, 12, 0, 0, 0)
+        received = functions._align_to_hour(value, 'backward')
+        expected = datetime.datetime(1970, 1, 1, 12, 0, 0, 0)
+        self.assertEqual(expected, received)
+
+    def test_align_to_hour_works_forward_reset_sub_hour(self):
+        value = datetime.datetime(1970, 1, 1, 12, 1, 2, 3)
+        received = functions._align_to_hour(value, 'forward')
+        expected = datetime.datetime(1970, 1, 1, 13, 0, 0, 0)
+        self.assertEqual(expected, received)
+
+    def test_align_to_hour_works_backward_reset_sub_hour(self):
+        value = datetime.datetime(1970, 1, 1, 12, 1, 2, 3)
+        received = functions._align_to_hour(value, 'backward')
+        expected = datetime.datetime(1970, 1, 1, 12, 0, 0, 0)
+        self.assertEqual(expected, received)
+
+    def test_align_to_hour_works_forward_across_days(self):
+        value = datetime.datetime(1970, 1, 1, 23, 1, 2, 3)
+        received = functions._align_to_hour(value, 'forward')
+        expected = datetime.datetime(1970, 1, 2, 0, 0, 0, 0)
+        self.assertEqual(expected, received)
+
+    def test_six_sigma_core_basic(self):
+        values = np.array([1, 1, 1, 1])
+        mean, std = functions._six_sigma_core(values, 2)
+        npt.assert_array_equal([1., 1.], mean)
+        npt.assert_array_equal([0., 0.], std)
+
+    def test_six_sigma_core_different_array_lengths(self):
+        values = np.array([1, 1, 1, 1, 1, 1, 1, 1])
+        mean, std = functions._six_sigma_core(values, 2)
+        npt.assert_array_equal([1., 1., 1., 1.], mean)
+        npt.assert_array_equal([0., 0., 0., 0.], std)
+
+    def test_six_sigma_core_change_mean_and_std(self):
+        values = np.array([1, 1, 3, 3])
+        mean, std = functions._six_sigma_core(values, 2)
+        npt.assert_array_equal([2., 2.], mean)
+        npt.assert_array_equal([1., 1.], std)
+
+
+class TestSixSigma(TestCase):
+
+    def setUp(self):
+        test_data = TimeSeries('test-data', 0, 1, 1, [1])
+        test_data.pathExpression = 'foo'
+        test_context = {"startTime": datetime.datetime(year=2014, month=6, day=1, hour=0),
+                        "endTime": datetime.datetime(year=2014, month=6, day=1, hour=2),
+                        }
+        self.test_data = test_data
+        self.test_context = test_context
+
+
+    @patch('graphite.render.functions.evaluateTarget')
+    @patch('graphite.render.functions._interpolate')
+    @patch('graphite.render.functions._keep_slice')
+    def test_sixSigma_has_default_arguments(self, keep_mock, interpolate_mock, evaluateTarget_mock):
+        returned_test_data = TimeSeries('full-data', 0, 100, 1, np.hstack([np.arange(7 * 24) for i in range(8)]))
+        evaluateTarget_mock.return_value = [returned_test_data]
+        interpolate_mock.return_value = (np.array([1]), np.array([1]))
+        keep_mock.return_value = slice(0, 1)
+        ans = functions.sixSigma(self.test_context, [self.test_data])
+        self.assertEqual("sixSigmaMean(%s, period='-7d', repeats=8)" % self.test_data.name, ans[0].name)
+        self.assertEqual("sixSigmaUpper(%s, period='-7d', repeats=8, factor=3.0)" % self.test_data.name, ans[1].name)
+        self.assertEqual("sixSigmaLower(%s, period='-7d', repeats=8, factor=3.0)" % self.test_data.name, ans[2].name)
+
+    @patch('graphite.render.functions.evaluateTarget')
+    @patch('graphite.render.functions._interpolate')
+    @patch('graphite.render.functions._keep_slice')
+    def test_sixSigma_returns_mean_upper_and_lower_band(self, keep_mock,
+            interpolate_mock, evaluateTarget_mock):
+        returned_test_data = TimeSeries('full-data', 0, 100, 1,
+                                        np.hstack([np.arange(10) for i in range(10)]))
+        interpolate_mock.return_value = (np.array([1]), np.array([1]))
+        keep_mock.return_value = slice(0, 1)
+        evaluateTarget_mock.return_value = [returned_test_data]
+        ans = functions.sixSigma(self.test_context,
+                                 [self.test_data],
+                                 period='2h',
+                                 repeats=10,
+                                 factor='3:4'
+                                 )
+        self.assertEqual("sixSigmaMean(%s, period='-2h', repeats=10)" % self.test_data.name, ans[0].name)
+        self.assertEqual("sixSigmaUpper(%s, period='-2h', repeats=10, factor=4.0)" % self.test_data.name, ans[1].name)
+        self.assertEqual("sixSigmaLower(%s, period='-2h', repeats=10, factor=3.0)" % self.test_data.name, ans[2].name)

@@ -20,11 +20,13 @@ import math
 import re
 import random
 import time
+import math
 
 from graphite.logger import log
 from graphite.render.attime import parseTimeOffset
 
-from graphite.events import models
+from django.conf import settings
+models = __import__("%s.models" % settings.EVENTS_MODULE, globals(), locals(), [""])
 
 #XXX format_units() should go somewhere else
 from os import environ
@@ -2997,6 +2999,249 @@ def events(requestContext, *tags):
   result_series.pathExpression = name
   return [result_series]
 
+def linregress(requestContext, seriesList, minValidValues=0):
+
+  import numpy as np
+  from scipy import stats
+
+  # TODO refactor into module level function
+  def to_epoch(datetime_object):
+    return int(time.mktime(datetime_object.timetuple()))
+
+  start = to_epoch(requestContext["startTime"])
+  end = to_epoch(requestContext["endTime"])
+
+  result = []
+
+  for series in seriesList:
+    time_ = np.arange(series.start, series.end, series.step, dtype=float)
+    values = np.asarray(series, dtype=float)
+    mask = np.logical_not(np.isnan(values))
+
+    x = time_[mask]
+    y = values[mask]
+
+    # if more than  of values are None, we can't predict
+    if len(values) * minValidValues > (len(y)):
+        continue
+    slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+
+    result_values = []
+    result_values.append(slope * start + intercept)
+    result_values.append(slope * end + intercept)
+    result_series = TimeSeries('linregress(%s)' % series.name,
+                                start,
+                                end + (end - start),
+                                (end - start),
+                                list(result_values))
+    result.append(result_series)
+
+  return result
+
+
+def _replace_none(array):
+    import numpy as np
+    run = False
+    start = 0
+    end = 0
+    for index,value in enumerate(array):
+        if not run and value is None:
+            run = True
+            start = index
+        elif run and value is not None:
+            run = False
+            if start == 0:
+                fill = array[index]
+            else:
+                fill = np.linspace(array[start-1],
+                                   array[index],
+                                   index-start+2)[1:-1]
+            array[start:index] = fill
+    if run:
+        array[start:] = array[start-1]
+
+
+def _parse_factor(factor):
+    # parse upper and lower factor
+    try:
+        factor_upper = float(factor)
+        factor_lower = float(factor)
+    except ValueError:
+        factors = factor.split(':')
+        if len(factors) != 2:
+            raise ValueError('The factor must be a float/int or a string describing two numbers seperated by a ":"')
+        factor_lower = float(factors[0])
+        factor_upper = float(factors[1])
+
+    return factor_upper, factor_lower
+
+
+def _six_sigma_core(values, repeats):
+
+        # do the six sigma algorithm
+        new_rows = repeats
+        new_columns = values.size / new_rows
+
+        # replace none values by interpolation
+        _replace_none(values)
+        # cast to float
+        values = values.astype('float')
+        # reshape the array
+        values = values.reshape(new_rows, new_columns)
+        # calculate the mean across weeks
+        values_mean = values.mean(axis=0)
+        # calculate the standard deviation across weeks
+        values_std = values.std(axis=0)
+
+        return values_mean, values_std
+
+
+def _interpolate(time_, delta, original_step, new_step, mean, std):
+        import numpy as np
+        # Do a linear interpolation of the mean and variance.
+        # Effectively, this brings the mean and variance to the same resolution
+        # as the original series.
+        period_start = to_epoch(time_)
+        period_end = to_epoch(time_ + delta)
+        old_x = np.arange(period_end, period_start, original_step)
+        new_x = np.arange(period_end, period_start, new_step)
+        interpolated_mean = np.interp(new_x, old_x, mean)
+        interpolated_std = np.interp(new_x, old_x, std)
+        return interpolated_mean, interpolated_std
+
+
+def _align_to_hour(value, type):
+    if type == 'forward':
+        delta = timedelta(seconds=3600)
+    elif type == 'backward':
+        delta = timedelta(seconds=0)
+    else:
+        raise ValueError('Received %s' % type)
+    return value.replace(minute=0, second=0, microsecond=0) + delta
+
+
+def _create_my_context(requestContext, delta, repeats):
+    myContext = requestContext.copy()
+    # new endTime is the last full hour minus the period
+    myContext['endTime'] = _align_to_hour(requestContext['endTime'], 'forward') + delta
+    # new startTime is the endTime shited back by the period times repeats
+    myContext['startTime'] = myContext['endTime'] + delta * repeats
+    return myContext
+
+
+def to_epoch(datetime_object):
+    return int(time.mktime(datetime_object.timetuple()))
+
+
+def _total_seconds(timedelta_):
+    """ Timedelta total_seconds for compatability with Python 2.6. """
+    return (timedelta_.microseconds + (timedelta_.seconds + timedelta_.days * 24 * 3600) * 10**6) / float(10**6)
+
+
+def _keep_slice(shifted, series, delta):
+    # keep only the relevant bins, remove unused part from beginning and
+    # end
+    front_cut = (shifted.end - _total_seconds(delta) - series.end) / series.step
+    back_cut = (series.start -  shifted.end) / series.step
+    to_keep = slice(int(math.ceil(back_cut)),
+                    int(math.floor(front_cut)) * -1)
+    return to_keep
+
+
+def sixSigma(requestContext,
+             seriesList,
+             period='7d',
+             repeats=8,
+             factor=3):
+
+    import numpy as np
+
+    if not seriesList:
+        return
+
+    # Default to negative. parseTimeOffset defaults to +
+    if period[0].isdigit():
+        period = '-' + period
+
+    # Convert period into a timedelta object
+    delta = parseTimeOffset(period)
+
+    # assign start and end for easy reuse
+    start = requestContext['startTime']
+    end = requestContext['endTime']
+
+
+    # parse the factor argument
+    factor_upper, factor_lower = _parse_factor(factor)
+
+    # create a new request context for fetching the data to do sixSigma on
+    myContext = _create_my_context(requestContext, delta, repeats)
+
+    result = []
+    series = seriesList[0]
+    # fetch the data, and then operate on it
+    for shifted in evaluateTarget(myContext, series.pathExpression):
+
+        # preserve orig name, when only one metric was provided
+        if len(seriesList) == 1:
+            shifted.name = series.name
+
+        # convert to numpy array
+        values = np.asarray(shifted)
+
+        # do the core of the sixSigma
+        values_mean, values_std = _six_sigma_core(values, repeats)
+
+        # do the interpolation
+        interpolated_mean, interpolated_std = \
+                _interpolate(myContext['endTime'],
+                             delta,
+                             shifted.step,
+                             series.step,
+                             values_mean,
+                             values_std)
+
+        if abs(delta) > end - start:
+            # if the sixSigma period is larger than the requested time range
+            start = series.start
+            to_keep = _keep_slice(shifted, series, delta)
+            keep_mean = interpolated_mean[to_keep]
+            keep_std = interpolated_std[to_keep]
+            assert(len(keep_mean) == len(series))
+        else:
+            front_cut = (shifted.end - _total_seconds(delta) - series.end) / series.step
+            start = shifted.end
+            keep_mean = interpolated_mean[:-front_cut]
+            keep_std = interpolated_std[:-front_cut]
+
+        # assemble return values
+        # the mean itself
+        result_mean = TimeSeries("sixSigmaMean(%s, period='%s', repeats=%i)"
+                                 % (shifted.name, period, repeats),
+                                 start,
+                                 shifted.end,
+                                 series.step,
+                                 list(keep_mean))
+        # the upper boundary
+        result_upper = TimeSeries("sixSigmaUpper(%s, period='%s', repeats=%i, factor=%s)"
+                                  % (shifted.name, period, repeats, factor_upper),
+                                  start,
+                                  shifted.end,
+                                  series.step,
+                                  list(keep_mean + factor_upper * keep_std))
+        # the lower boundary
+        result_lower = TimeSeries("sixSigmaLower(%s, period='%s', repeats=%i, factor=%s)"
+                                  % (shifted.name, period, repeats, factor_lower),
+                                  start,
+                                  shifted.end,
+                                  series.step,
+                                  list(keep_mean - factor_lower * keep_std))
+        result.extend([result_mean,
+                       result_upper,
+                       result_lower,
+                       ])
+    return result
+
 def pieAverage(requestContext, series):
   return safeDiv(safeSum(series),safeLen(series))
 
@@ -3060,6 +3305,8 @@ SeriesFunctions = {
   'pct' : asPercent,
   'diffSeries' : diffSeries,
   'divideSeries' : divideSeries,
+  'linregress': linregress,
+  'sixSigma': sixSigma,
 
   # Series Filter functions
   'mostDeviant' : mostDeviant,
@@ -3132,6 +3379,7 @@ SeriesFunctions = {
 
   #events
   'events': events,
+
 }
 
 
